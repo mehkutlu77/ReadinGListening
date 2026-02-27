@@ -4,123 +4,123 @@ const sinavlarVerisi = [
     "sorular": [
       {
         "soru_no": 1,
-        "soru_metni": "The sun is _____ the clouds.",
-        "secenekler": { "A": "about", "B": "above", "C": "across", "D": "after" },
-        "dogru_cevap": "B"
+        "soru_metni": "Hello, what _____ your name?",
+        "secenekler": { "A": "is", "B": "am", "C": "are", "D": "be" },
+        "dogru_cevap": "A"
       },
       {
         "soru_no": 2,
-        "soru_metni": "If you want to buy medicine, you should go to the _____.",
-        "secenekler": { "A": "bakery", "B": "library", "C": "pharmacy", "D": "butcher" },
-        "dogru_cevap": "C"
+        "soru_metni": "I usually _____ breakfast at 8:00 AM every morning.",
+        "secenekler": { "A": "having", "B": "have", "C": "has", "D": "had" },
+        "dogru_cevap": "B"
       },
       {
         "soru_no": 3,
-        "soru_metni": "Why does Ali arrive at the airport early?",
-        "secenekler": { "A": "To meet friends", "B": "To eat breakfast", "C": "To avoid missing his flight", "D": "To buy gifts" },
+        "soru_metni": "My uncle is my father's _____.",
+        "secenekler": { "A": "father", "B": "son", "C": "brother", "D": "cousin" },
         "dogru_cevap": "C"
       },
       {
         "soru_no": 4,
-        "soru_metni": "What does Ali do before leaving home for school?",
-        "secenekler": { "A": "Plays games", "B": "Packs his bag", "C": "Meets friends", "D": "Does homework" },
-        "dogru_cevap": "B"
+        "soru_metni": "She is _____ than her sister.",
+        "secenekler": { "A": "tall", "B": "tallest", "C": "more tall", "D": "taller" },
+        "dogru_cevap": "D"
       },
       {
         "soru_no": 5,
-        "soru_metni": "You can _____ anything if you work hard.",
-        "secenekler": { "A": "ache", "B": "achieve", "C": "adopt", "D": "admit" },
+        "soru_metni": "Did you _____ to the cinema yesterday?",
+        "secenekler": { "A": "went", "B": "go", "C": "going", "D": "goes" },
         "dogru_cevap": "B"
       },
       {
         "soru_no": 6,
-        "soru_metni": "Technology continues to _____ every day.",
-        "secenekler": { "A": "advance", "B": "advise", "C": "agree", "D": "allow" },
-        "dogru_cevap": "A"
+        "soru_metni": "I have lived in this city _____ five years.",
+        "secenekler": { "A": "since", "B": "in", "C": "for", "D": "from" },
+        "dogru_cevap": "C"
       },
       {
         "soru_no": 7,
-        "soru_metni": "Why does Ali follow the news regularly?",
-        "secenekler": { "A": "To pass exams", "B": "To understand what is happening around the world", "C": "To spend free time", "D": "To talk less" },
-        "dogru_cevap": "B"
+        "soru_metni": "If it rains tomorrow, we _____ at home.",
+        "secenekler": { "A": "will stay", "B": "stayed", "C": "staying", "D": "would stay" },
+        "dogru_cevap": "A"
       },
       {
         "soru_no": 8,
-        "soru_metni": "It was a very _____ meeting; we made a lot of important decisions.",
-        "secenekler": { "A": "productive", "B": "sleepy", "C": "lazy", "D": "angry" },
-        "dogru_cevap": "A"
+        "soru_metni": "The window was _____ by the boys playing football.",
+        "secenekler": { "A": "break", "B": "broke", "C": "breaking", "D": "broken" },
+        "dogru_cevap": "D"
       },
       {
         "soru_no": 9,
-        "soru_metni": "The new phone with a better camera is a great _____ in technology.",
-        "secenekler": { "A": "innovation", "B": "isolation", "C": "illness", "D": "illusion" },
-        "dogru_cevap": "A"
+        "soru_metni": "I wish I _____ more time to study for the exam right now.",
+        "secenekler": { "A": "have", "B": "had", "C": "am having", "D": "will have" },
+        "dogru_cevap": "B"
       },
       {
         "soru_no": 10,
-        "soru_metni": "We need to _____ our position to get a better deal.",
-        "secenekler": { "A": "dribble", "B": "leverage", "C": "douse", "D": "dwindle" },
-        "dogru_cevap": "B"
+        "soru_metni": "You _____ have seen him today; he is currently in London.",
+        "secenekler": { "A": "couldn't", "B": "shouldn't", "C": "mustn't", "D": "wouldn't" },
+        "dogru_cevap": "A"
       },
       {
         "soru_no": 11,
-        "soru_metni": "The lawyer's argument for reform was very _____ and convincing.",
-        "secenekler": { "A": "cogent", "B": "crestfallen", "C": "dowdy", "D": "tepid" },
-        "dogru_cevap": "A"
-      },
-      {
-        "soru_no": 12,
-        "soru_metni": "The government took _____ measures to control the protest.",
-        "secenekler": { "A": "draconian", "B": "aesthetic", "C": "joyful", "D": "juicy" },
-        "dogru_cevap": "A"
-      },
-      {
-        "soru_no": 13,
-        "soru_metni": "She looked completely _____ after losing the match.",
-        "secenekler": { "A": "joyful", "B": "crestfallen", "C": "durable", "D": "productive" },
+        "soru_metni": "Despite _____ sick, she went to work.",
+        "secenekler": { "A": "be", "B": "being", "C": "been", "D": "was" },
         "dogru_cevap": "B"
       },
       {
+        "soru_no": 12,
+        "soru_metni": "We need to _____ the problem before it gets any worse.",
+        "secenekler": { "A": "invent", "B": "ignore", "C": "tackle", "D": "invite" },
+        "dogru_cevap": "C"
+      },
+      {
+        "soru_no": 13,
+        "soru_metni": "Scarcely _____ the door when the phone started ringing.",
+        "secenekler": { "A": "he had opened", "B": "he opened", "C": "did he open", "D": "had he opened" },
+        "dogru_cevap": "D"
+      },
+      {
         "soru_no": 14,
-        "soru_metni": "A small red beetle with black spots is a _____.",
-        "secenekler": { "A": "ladybug", "B": "dragonfly", "C": "jellyfish", "D": "seagull" },
+        "soru_metni": "The company is on the _____ of bankruptcy and might close soon.",
+        "secenekler": { "A": "verge", "B": "limit", "C": "border", "D": "edge" },
         "dogru_cevap": "A"
       },
       {
         "soru_no": 15,
-        "soru_metni": "To give a good reason for something is to _____ it.",
-        "secenekler": { "A": "justify", "B": "jump", "C": "join", "D": "judge" },
-        "dogru_cevap": "A"
-      },
-      {
-        "soru_no": 16,
-        "soru_metni": "The period of life in which a person is old and weak is called _____.",
-        "secenekler": { "A": "dotage", "B": "dosage", "C": "dossier", "D": "dross" },
-        "dogru_cevap": "A"
-      },
-      {
-        "soru_no": 17,
-        "soru_metni": "What does Ali believe about the world?",
-        "secenekler": { "A": "It is small and boring", "B": "It is dangerous", "C": "It is full of differences", "D": "It is all the same" },
+        "soru_metni": "It is crucial that he _____ the meeting tomorrow morning.",
+        "secenekler": { "A": "attends", "B": "attended", "C": "attend", "D": "attending" },
         "dogru_cevap": "C"
       },
       {
+        "soru_no": 16,
+        "soru_metni": "By this time next year, I _____ my university degree.",
+        "secenekler": { "A": "will finish", "B": "will have finished", "C": "finish", "D": "finished" },
+        "dogru_cevap": "B"
+      },
+      {
+        "soru_no": 17,
+        "soru_metni": "The stock market is very unpredictable; it's highly _____.",
+        "secenekler": { "A": "stable", "B": "constant", "C": "reliable", "D": "volatile" },
+        "dogru_cevap": "D"
+      },
+      {
         "soru_no": 18,
-        "soru_metni": "A planned way of doing something to achieve a goal is a _____.",
-        "secenekler": { "A": "tactic", "B": "tractor", "C": "tragedy", "D": "ticket" },
-        "dogru_cevap": "A"
+        "soru_metni": "His remarks were completely _____, adding no logical value to the discussion.",
+        "secenekler": { "A": "profound", "B": "inane", "C": "astute", "D": "pertinent" },
+        "dogru_cevap": "B"
       },
       {
         "soru_no": 19,
-        "soru_metni": "The new discovery _____ the previous theories, proving they were not true.",
-        "secenekler": { "A": "invalidates", "B": "validates", "C": "invents", "D": "invests" },
+        "soru_metni": "The politician tried to _____ the angry crowd by promising immediate reforms.",
+        "secenekler": { "A": "placate", "B": "provoke", "C": "instigate", "D": "alienate" },
         "dogru_cevap": "A"
       },
       {
         "soru_no": 20,
-        "soru_metni": "A small imaginary person with pointed ears is an _____.",
-        "secenekler": { "A": "elf", "B": "eagle", "C": "eraser", "D": "exam" },
-        "dogru_cevap": "A"
+        "soru_metni": "To completely understand this contract, you have to read between the _____.",
+        "secenekler": { "A": "words", "B": "pages", "C": "lines", "D": "sentences" },
+        "dogru_cevap": "C"
       }
     ]
   },
@@ -750,6 +750,3 @@ const sinavlarVerisi = [
     ]
   }
 ];
-
-// Eğer JS modülü (ES6) kullanıyorsanız:
-// export default sinavlarVerisi;

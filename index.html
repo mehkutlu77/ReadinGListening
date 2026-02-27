@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>LinguiVance — Learn English</title>
 
+<!-- ── Content Security Policy ──────────────────────────── -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' fonts.googleapis.com;
+  font-src 'self' fonts.gstatic.com data:;
+  img-src 'self' data: blob:;
+  connect-src 'self';
+  worker-src 'self';
+  manifest-src 'self'
+">
+
 <!-- ── PWA Core ─────────────────────────────────────────── -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4ade80" media="(prefers-color-scheme: light)">
@@ -24,6 +36,20 @@
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
+
+<!-- ── iOS Splash Screens ────────────────────────────────── -->
+<!-- iPhone 16 Pro Max (430×932) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="icons/icon-512x512.png">
+<!-- iPhone 15 Pro / 14 Pro (393×852) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="icons/icon-512x512.png">
+<!-- iPhone 14 / 13 / 12 (390×844) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="icons/icon-512x512.png">
+<!-- iPhone SE 3rd gen (375×667) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="icons/icon-384x384.png">
+<!-- iPad Pro 12.9" (1024×1366) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" href="icons/icon-512x512.png">
+<!-- iPad Air / Pro 11" (834×1194) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" href="icons/icon-512x512.png">
 
 <!-- ── SEO & Social ─────────────────────────────────────── -->
 <meta name="description" content="LinguiVance — Learn English with adaptive flashcards, smart exams, and reading modules. Track your progress from Sprout to Galaxy level.">
@@ -55,17 +81,96 @@
   }
 </style>
 
+<!-- ── Performance: preconnect ──────────────────────────── -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 
 <!-- ── Service Worker Registration ─────────────────────── -->
 <script>
+  let _swReg = null;
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('[SW] Registered:', reg.scope))
+        .then(reg => {
+          console.log('[SW] Registered:', reg.scope);
+          _swReg = reg;
+
+          // New SW waiting → show update banner
+          function checkWaiting(r) {
+            if (r.waiting) {
+              document.getElementById('swUpdateBanner')?.classList.add('show');
+            }
+          }
+          checkWaiting(reg);
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                document.getElementById('swUpdateBanner')?.classList.add('show');
+              }
+            });
+          });
+        })
         .catch(err => console.warn('[SW] Registration failed:', err));
+
+      // When SW takes control after update, reload
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
     });
+  }
+
+  function swApplyUpdate() {
+    if (_swReg && _swReg.waiting) {
+      _swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    document.getElementById('swUpdateBanner')?.classList.remove('show');
+  }
+
+  // ── PWA Install Prompt ────────────────────────────────
+  let _deferredInstall = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredInstall = e;
+    // Show banner only if user hasn't dismissed it before
+    if (!localStorage.getItem('lv_install_dismissed')) {
+      // Delay slightly so the app UI is rendered first
+      setTimeout(() => {
+        const banner = document.getElementById('installBanner');
+        if (banner) banner.classList.add('show');
+      }, 3000);
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    _deferredInstall = null;
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.classList.remove('show');
+    console.log('[PWA] App installed successfully');
+  });
+
+  function installApp() {
+    if (!_deferredInstall) return;
+    _deferredInstall.prompt();
+    _deferredInstall.userChoice.then(result => {
+      if (result.outcome === 'accepted') {
+        const banner = document.getElementById('installBanner');
+        if (banner) banner.classList.remove('show');
+      }
+      _deferredInstall = null;
+    });
+  }
+
+  function dismissInstall() {
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.classList.remove('show');
+    localStorage.setItem('lv_install_dismissed', '1');
   }
 </script>
 <style>
@@ -115,6 +220,10 @@ body {
   display: flex;
   justify-content: center;
   min-height: 100vh;
+  /* iOS notch / status-bar top padding */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .app {
@@ -127,7 +236,8 @@ body {
 }
 
 /* ---- SCREENS ---- */
-.screen { display: none; padding: 24px; animation: fadeUp .25s ease; min-height: 100vh; }
+/* Extra bottom padding = tab-bar height + iOS home indicator */
+.screen { display: none; padding: 24px; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); animation: fadeUp .25s ease; min-height: 100vh; }
 .screen.active { display: block; }
 /* Reading screen is flex-column and handles its own scrolling */
 #readMod { display: none; }
@@ -487,7 +597,12 @@ body {
   z-index: 500;
   overflow: hidden;
 }
-.reading-header { padding: 20px 20px 10px; border-bottom: 1px solid var(--border); }
+.reading-header {
+  padding: 20px 20px 10px;
+  /* iOS notch clearance */
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid var(--border);
+}
 .reading-title {
   font-family: 'Playfair Display', serif;
   font-size: 1.2rem;
@@ -851,6 +966,73 @@ textarea:focus { border-color: var(--lvl-main); outline: none; }
 .lvl-progress-fill { height: 100%; border-radius: 50px; transition: width .5s; }
 .lvl-count-small { font-size: .78rem; font-weight: 700; color: var(--muted); min-width: 30px; text-align: right; }
 
+/* ---- PWA INSTALL BANNER ---- */
+#installBanner {
+  display: none;
+  position: fixed;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  left: 50%; transform: translateX(-50%);
+  width: calc(100% - 32px); max-width: 488px;
+  background: white;
+  border: 1.5px solid var(--lvl-main);
+  border-radius: 18px;
+  padding: 14px 16px;
+  z-index: 990;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  align-items: center;
+  gap: 12px;
+  animation: fadeUp .3s ease;
+}
+#installBanner.show { display: flex; }
+#installBanner .ib-icon { font-size: 2rem; flex-shrink: 0; }
+#installBanner .ib-text { flex: 1; }
+#installBanner .ib-text strong { display: block; font-size: .88rem; color: var(--text); margin-bottom: 2px; }
+#installBanner .ib-text span   { font-size: .78rem; color: var(--muted); }
+#installBanner .ib-btn {
+  background: linear-gradient(135deg, var(--lvl-main), var(--lvl-dark));
+  color: white; border: none; border-radius: 12px;
+  padding: 9px 16px; font-size: .82rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+}
+#installBanner .ib-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 1.2rem; cursor: pointer; padding: 4px; line-height: 1;
+}
+
+/* ---- SW UPDATE BANNER ---- */
+#swUpdateBanner {
+  display: none;
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 50%; transform: translateX(-50%);
+  width: calc(100% - 32px); max-width: 488px;
+  background: #1e293b;
+  color: white;
+  border-radius: 16px;
+  padding: 13px 16px;
+  z-index: 9800;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  align-items: center;
+  gap: 12px;
+  animation: fadeDown .3s ease;
+}
+#swUpdateBanner.show { display: flex; }
+@keyframes fadeDown { from { opacity:0; transform:translateX(-50%) translateY(-12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+#swUpdateBanner .su-text { flex: 1; font-size: .84rem; font-weight: 600; }
+#swUpdateBanner .su-text span { display: block; font-size: .74rem; font-weight: 400; opacity: .75; margin-top: 1px; }
+#swUpdateBanner .su-btn {
+  background: #4ade80; color: #14532d;
+  border: none; border-radius: 10px;
+  padding: 8px 14px; font-size: .82rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+}
+#swUpdateBanner .su-close {
+  background: none; border: none; color: rgba(255,255,255,.6);
+  font-size: 1.1rem; cursor: pointer; padding: 4px; line-height: 1;
+}
+
 /* ---- TOAST ---- */
 #toast {
   visibility: hidden;
@@ -891,6 +1073,8 @@ textarea:focus { border-color: var(--lvl-main); outline: none; }
   display: flex;
   z-index: 1000;
   box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+  /* iOS safe-area: tab bar above home indicator */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .tab-item {
   flex: 1;
@@ -1020,7 +1204,7 @@ textarea:focus { border-color: var(--lvl-main); outline: none; }
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.55);
-  z-index: 8000;
+  z-index: 9500; /* above onboarding (9000) and auth (9100) */
   display: none; align-items: flex-end; justify-content: center;
   padding: 0;
 }
@@ -1313,56 +1497,77 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
 
 <div id="toast" role="status" aria-live="polite">✅ Saved</div>
 
+<!-- ===== SW UPDATE BANNER ===== -->
+<div id="swUpdateBanner" role="alert" aria-live="polite" aria-label="Yeni güncelleme mevcut">
+  <div class="su-text">
+    🔄 Yeni Sürüm Hazır
+    <span>Güncel içerikler için yenileyin</span>
+  </div>
+  <button class="su-btn" onclick="swApplyUpdate()" aria-label="Uygulamayı yenile">Yenile</button>
+  <button class="su-close" onclick="document.getElementById('swUpdateBanner').classList.remove('show')" aria-label="Kapat">✕</button>
+</div>
+
+<!-- ===== PWA INSTALL BANNER ===== -->
+<div id="installBanner" role="banner" aria-label="Uygulamayı yükle">
+  <span class="ib-icon" aria-hidden="true">🌍</span>
+  <div class="ib-text">
+    <strong>LinguiVance'ı Yükle</strong>
+    <span>Ana ekrana ekle — internet olmadan çalışır!</span>
+  </div>
+  <button class="ib-btn" onclick="installApp()" aria-label="Uygulamayı ana ekrana yükle">Yükle</button>
+  <button class="ib-close" onclick="dismissInstall()" aria-label="Banner'ı kapat">✕</button>
+</div>
+
 <!-- ===== AUTH SCREEN ===== -->
-<div id="authScreen" style="display:none;position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,var(--sprout-soft) 0%,#ffffff 60%,#f0f9ff 100%);align-items:center;justify-content:center;padding:24px;">
+<div id="authScreen" role="dialog" aria-modal="true" aria-label="LinguiVance — Giriş veya Kayıt" style="display:none;position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,var(--sprout-soft) 0%,#ffffff 60%,#f0f9ff 100%);align-items:center;justify-content:center;padding:24px;">
   <div class="auth-card">
-    <div class="auth-logo">
+    <div class="auth-logo" aria-hidden="true">
       <span class="auth-logo-emoji">🌍</span>
       <div class="auth-logo-title">LinguiVance</div>
       <div class="auth-logo-sub">Learn English — Smart & Adaptive</div>
     </div>
-    <div class="auth-tabs">
-      <button class="auth-tab-btn active" id="authTabLogin" onclick="authSwitchTab('login')">Giriş Yap</button>
-      <button class="auth-tab-btn" id="authTabReg" onclick="authSwitchTab('reg')">Kayıt Ol</button>
+    <div class="auth-tabs" role="tablist" aria-label="Giriş veya Kayıt seçin">
+      <button class="auth-tab-btn active" id="authTabLogin" role="tab" aria-selected="true"  aria-controls="authFormLogin" onclick="authSwitchTab('login')">Giriş Yap</button>
+      <button class="auth-tab-btn"        id="authTabReg"   role="tab" aria-selected="false" aria-controls="authFormReg"   onclick="authSwitchTab('reg')">Kayıt Ol</button>
     </div>
 
     <!-- Login Form -->
-    <div class="auth-form active" id="authFormLogin">
+    <div class="auth-form active" id="authFormLogin" role="tabpanel" aria-labelledby="authTabLogin">
       <div class="auth-field">
-        <label>E-posta</label>
-        <input type="email" id="authLoginEmail" placeholder="ornek@mail.com" autocomplete="email">
+        <label for="authLoginEmail">E-posta</label>
+        <input type="email" id="authLoginEmail" placeholder="ornek@mail.com" autocomplete="email" aria-required="true" aria-describedby="authErrLogin">
       </div>
       <div class="auth-field">
-        <label>Şifre</label>
-        <input type="password" id="authLoginPw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')authLogin()">
+        <label for="authLoginPw">Şifre</label>
+        <input type="password" id="authLoginPw" placeholder="••••••••" autocomplete="current-password" aria-required="true" aria-describedby="authErrLogin" onkeydown="if(event.key==='Enter')authLogin()">
       </div>
-      <div class="auth-err" id="authErrLogin"></div>
+      <div class="auth-err" id="authErrLogin" role="alert" aria-live="assertive"></div>
       <button class="auth-submit" onclick="authLogin()">Giriş Yap →</button>
     </div>
 
     <!-- Register Form -->
-    <div class="auth-form" id="authFormReg">
+    <div class="auth-form" id="authFormReg" role="tabpanel" aria-labelledby="authTabReg">
       <div class="auth-field">
-        <label>Ad Soyad</label>
-        <input type="text" id="authRegName" placeholder="Adınız..." maxlength="40" autocomplete="name">
+        <label for="authRegName">Ad Soyad</label>
+        <input type="text" id="authRegName" placeholder="Adınız..." maxlength="40" autocomplete="name" aria-required="true" aria-describedby="authErrReg">
       </div>
       <div class="auth-field">
-        <label>E-posta</label>
-        <input type="email" id="authRegEmail" placeholder="ornek@mail.com" autocomplete="email">
+        <label for="authRegEmail">E-posta</label>
+        <input type="email" id="authRegEmail" placeholder="ornek@mail.com" autocomplete="email" aria-required="true" aria-describedby="authErrReg">
       </div>
       <div class="auth-field">
-        <label>Şifre <span style="font-weight:400;text-transform:none;letter-spacing:0;">(en az 6 karakter)</span></label>
-        <input type="password" id="authRegPw" placeholder="••••••••" autocomplete="new-password">
+        <label for="authRegPw">Şifre <span style="font-weight:400;text-transform:none;letter-spacing:0;">(en az 6 karakter)</span></label>
+        <input type="password" id="authRegPw" placeholder="••••••••" autocomplete="new-password" aria-required="true" aria-describedby="authErrReg">
       </div>
       <div class="auth-field">
-        <label>Şifre Tekrar</label>
-        <input type="password" id="authRegPw2" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter')authRegister()">
+        <label for="authRegPw2">Şifre Tekrar</label>
+        <input type="password" id="authRegPw2" placeholder="••••••••" autocomplete="new-password" aria-required="true" aria-describedby="authErrReg" onkeydown="if(event.key==='Enter')authRegister()">
       </div>
-      <div class="auth-err" id="authErrReg"></div>
+      <div class="auth-err" id="authErrReg" role="alert" aria-live="assertive"></div>
       <button class="auth-submit" onclick="authRegister()">Kayıt Ol →</button>
     </div>
 
-    <div class="auth-footer">LinguiVance v1.0 — SenseLab © 2026</div>
+    <div class="auth-footer" aria-hidden="true">LinguiVance v1.0 — SenseLab © 2026</div>
   </div>
 </div>
 
@@ -1379,8 +1584,18 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
       <div class="ob-dot"></div>
       <div class="ob-dot"></div>
     </div>
+    <!-- T&C acceptance — required before proceeding -->
+    <label id="obTcLabel" style="display:flex;align-items:flex-start;gap:10px;margin:16px 0 8px;font-size:.82rem;color:var(--muted);line-height:1.5;cursor:pointer;text-align:left;width:100%;">
+      <input type="checkbox" id="obTcCheck" onchange="obTcToggle()" style="margin-top:3px;accent-color:var(--lvl-main);width:17px;height:17px;flex-shrink:0;">
+      <span>
+        <a href="#" onclick="openModal('termsModal');return false;" style="color:var(--lvl-main);font-weight:600;">Kullanım Koşullarını</a>
+        ve
+        <a href="#" onclick="openModal('privacyModal');return false;" style="color:var(--lvl-main);font-weight:600;">Gizlilik Politikasını</a>
+        okudum ve kabul ediyorum.
+      </span>
+    </label>
     <div class="ob-btn-row">
-      <button class="ob-next" onclick="obNext(2)">Başla →</button>
+      <button class="ob-next" id="obStartBtn" onclick="obNext(2)" disabled style="opacity:.45;">Başla →</button>
     </div>
   </div>
   <!-- Step 2: Name & Avatar -->
@@ -1586,15 +1801,44 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
 
 <!-- Privacy Policy modal -->
 <div class="modal-overlay" id="privacyModal" role="dialog" aria-modal="true" aria-label="Gizlilik Politikası" onclick="closeModal('privacyModal')">
-  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:85vh;">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto;">
     <div class="modal-handle"></div>
     <div class="modal-title">🔒 Gizlilik Politikası</div>
-    <div style="font-size:.84rem;line-height:1.7;color:var(--muted);">
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">Veri Toplama:</strong> LinguiVance, kişisel verilerinizi sunucularımıza göndermez. Tüm verileriniz (öğrenilen kelimeler, okuma geçmişi, istatistikler) yalnızca cihazınızda yerel olarak saklanır.</p>
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">Üçüncü Taraf:</strong> Uygulama, Google Fonts ve Chart.js CDN kullanmaktadır. Bu hizmetler kendi gizlilik politikalarına tabidir.</p>
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">Çerezler:</strong> Uygulama çerez kullanmamaktadır. Tercihleriniz tarayıcı yerel depolama alanında (localStorage) saklanır.</p>
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">Veri Silme:</strong> Verilerinizi istediğiniz zaman Ayarlar → Sistemi Sıfırla seçeneğiyle tamamen silebilirsiniz.</p>
-      <p style="margin-bottom:0;"><strong style="color:var(--text);">İletişim:</strong> Gizlilik sorularınız için: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="cbbbb9a2bdaaa8b28bb8aea5b8aea7aaa9e5aabbbb">[email&#160;protected]</a></p>
+    <div style="font-size:.83rem;line-height:1.75;color:var(--muted);">
+      <p style="margin-bottom:8px;font-size:.75rem;color:var(--muted);">Son güncelleme: Şubat 2025</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">1. Geliştirici Bilgisi</strong><br>
+      LinguiVance uygulaması SenseLab tarafından geliştirilmektedir.<br>
+      İletişim: <a href="mailto:support@linguivance.app" style="color:var(--lvl-main);">support@linguivance.app</a></p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">2. Toplanan Veriler</strong><br>
+      LinguiVance <em>kişisel verilerinizi sunucularımıza göndermez</em>. Öğrenilen kelimeler, okuma geçmişi, sınav sonuçları ve profil bilgileri yalnızca cihazınızda yerel depolama alanında (localStorage) saklanır. Sunucuya herhangi bir veri iletilmez.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">3. Hesap Bilgileri</strong><br>
+      Kayıt sırasında girdiğiniz ad, e-posta ve şifre yalnızca cihazınızda şifreli biçimde (Base64 kodlama) saklanır. Şifreleriniz düz metin olarak saklanmaz ve hiçbir sunucuya gönderilmez.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">4. Üçüncü Taraf Hizmetler</strong><br>
+      Uygulama aşağıdaki harici CDN hizmetlerini kullanmaktadır:<br>
+      • <strong>Google Fonts</strong> — font yükleme (Google Gizlilik Politikası geçerli)<br>
+      • <strong>Chart.js CDN (jsDelivr)</strong> — istatistik grafikleri<br>
+      Bu hizmetler kendi gizlilik politikalarına tabidir. Offline kullanımda bu hizmetler önbellekten sunulur.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">5. Çerezler ve İzleme</strong><br>
+      Uygulama çerez (cookie) kullanmamaktadır. Analitik veya takip amaçlı herhangi bir SDK ya da SDK entegrasyonu bulunmamaktadır.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">6. Veri Saklama ve Silme</strong><br>
+      Verileriniz cihazınızda kalır. Profil → Hesabı Sil veya Ayarlar → Sistemi Sıfırla seçeneğiyle tüm verilerinizi kalıcı olarak silebilirsiniz. Bu işlem geri alınamaz.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">7. Çocukların Gizliliği</strong><br>
+      LinguiVance 13 yaşından küçük kullanıcılardan bilerek veri toplamamaktadır. 13 yaşından küçük bir çocuğun kayıt yaptırdığını fark ederseniz bizimle iletişime geçin.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">8. Politika Değişiklikleri</strong><br>
+      Bu politikayı zaman zaman güncelleyebiliriz. Değişiklikler uygulama içinde duyurulacaktır. Uygulamayı kullanmaya devam etmek güncel politikayı kabul ettiğiniz anlamına gelir.</p>
+
+      <p style="margin-bottom:0;"><strong style="color:var(--text);">9. İletişim</strong><br>
+      Gizlilik ile ilgili sorularınız için:<br>
+      📧 <a href="mailto:support@linguivance.app" style="color:var(--lvl-main);">support@linguivance.app</a><br>
+      🌐 <span style="color:var(--lvl-main);">linguivance.app</span></p>
     </div>
     <button class="btn btn-secondary" style="margin-top:20px;height:48px;" onclick="closeModal('privacyModal')">Kapat</button>
   </div>
@@ -1602,15 +1846,41 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
 
 <!-- Terms modal -->
 <div class="modal-overlay" id="termsModal" role="dialog" aria-modal="true" aria-label="Kullanım Koşulları" onclick="closeModal('termsModal')">
-  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:85vh;">
+  <div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto;">
     <div class="modal-handle"></div>
     <div class="modal-title">📋 Kullanım Koşulları</div>
-    <div style="font-size:.84rem;line-height:1.7;color:var(--muted);">
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">Kabul:</strong> LinguiVance'ı kullanarak bu koşulları kabul etmiş sayılırsınız.</p>
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">Kullanım Amacı:</strong> Uygulama yalnızca kişisel eğitim amaçlı kullanılabilir. Ticari kullanım yasaktır.</p>
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">İçerik:</strong> Uygulamadaki tüm içerikler (metinler, sorular) eğitim amaçlı oluşturulmuştur.</p>
-      <p style="margin-bottom:12px;"><strong style="color:var(--text);">Sorumluluk Reddi:</strong> SenseLab, uygulamanın kesintisiz çalışacağını garanti etmez.</p>
-      <p style="margin-bottom:0;"><strong style="color:var(--text);">Değişiklikler:</strong> Bu koşullar önceden haber verilmeksizin değiştirilebilir.</p>
+    <div style="font-size:.83rem;line-height:1.75;color:var(--muted);">
+      <p style="margin-bottom:8px;font-size:.75rem;color:var(--muted);">Son güncelleme: Şubat 2025</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">1. Kabul</strong><br>
+      LinguiVance'ı indirerek veya kullanarak bu Kullanım Koşullarını kabul etmiş sayılırsınız. Kabul etmiyorsanız uygulamayı kullanmayın.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">2. Geliştirici</strong><br>
+      Bu uygulama SenseLab tarafından sunulmaktadır.<br>
+      İletişim: <a href="mailto:support@linguivance.app" style="color:var(--lvl-main);">support@linguivance.app</a></p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">3. Kullanım Amacı</strong><br>
+      LinguiVance yalnızca kişisel, ticari olmayan eğitim amacıyla kullanılabilir. Uygulamayı kopyalamak, dağıtmak veya ticari amaçla kullanmak yasaktır.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">4. Kullanıcı Sorumlulukları</strong><br>
+      • Hesap bilgilerinizin güvenliğinden siz sorumlusunuz.<br>
+      • Uygulamayı yasadışı, zararlı veya başkalarını rahatsız edici şekillerde kullanamazsınız.<br>
+      • Admin yetkilerini kötüye kullanamazsınız.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">5. Fikri Mülkiyet</strong><br>
+      Uygulamadaki tüm içerikler (metinler, tasarım, kelime listeleri, okuma metinleri) SenseLab'e aittir veya lisanslıdır. İzinsiz kopyalanamaz.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">6. Sorumluluk Sınırı</strong><br>
+      SenseLab, uygulamanın kesintisiz veya hatasız çalışacağını garanti etmez. Uygulama "olduğu gibi" sunulmaktadır. Veri kaybından kaynaklanan zararlar için sorumluluk kabul edilmez.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">7. Hesap İptali</strong><br>
+      Hesabınızı ve tüm verilerinizi uygulama içinden silebilirsiniz. SenseLab, koşulları ihlal eden hesapları askıya alabilir.</p>
+
+      <p style="margin-bottom:12px;"><strong style="color:var(--text);">8. Değişiklikler</strong><br>
+      Bu koşullar önceden haber verilmeksizin güncellenebilir. Güncel koşullar uygulama içinde yayınlanacaktır.</p>
+
+      <p style="margin-bottom:0;"><strong style="color:var(--text);">9. İletişim</strong><br>
+      📧 <a href="mailto:support@linguivance.app" style="color:var(--lvl-main);">support@linguivance.app</a></p>
     </div>
     <button class="btn btn-secondary" style="margin-top:20px;height:48px;" onclick="closeModal('termsModal')">Kapat</button>
   </div>
@@ -1624,6 +1894,29 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
     <p style="font-size:.88rem;color:var(--muted);line-height:1.6;margin-bottom:20px;">Tüm verileriniz (kelimeler, okuma geçmişi, istatistikler, profil) kalıcı olarak silinecektir. Bu işlem geri alınamaz.</p>
     <button class="btn btn-danger" style="height:50px;" onclick="deleteAccount()">🗑️ Evet, Hesabımı Sil</button>
     <button class="btn btn-secondary" style="height:50px;margin-top:8px;" onclick="closeModal('deleteModal')">İptal</button>
+  </div>
+</div>
+
+<!-- Notification permission explanation modal -->
+<div class="modal-overlay" id="notifPermModal" role="dialog" aria-modal="true" aria-label="Bildirim İzni" onclick="closeModal('notifPermModal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔔 Bildirim İzni</div>
+    <div style="text-align:center;padding:8px 0 20px;">
+      <div style="font-size:3.5rem;margin-bottom:12px;">🌍</div>
+      <p style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:8px;">Günlük hatırlatmalar almak ister misiniz?</p>
+      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:16px;">
+        LinguiVance, her gün belirlediğiniz saatte öğrenme hatırlatması gönderir.<br>
+        <strong style="color:var(--text);">Hiçbir reklam veya pazarlama bildirimi gönderilmez.</strong>
+      </p>
+      <div style="background:var(--lvl-soft);border-radius:12px;padding:12px;text-align:left;font-size:.8rem;color:var(--text);margin-bottom:20px;line-height:1.7;">
+        ✅ Günlük öğrenme hatırlatması<br>
+        ✅ Streak tehlikede uyarısı<br>
+        ❌ Reklam yok &nbsp;❌ Üçüncü taraf yok
+      </div>
+    </div>
+    <button class="btn btn-primary" style="height:50px;" onclick="requestNotifPermission()">🔔 İzin Ver</button>
+    <button class="btn btn-secondary" style="height:50px;margin-top:8px;" onclick="closeModal('notifPermModal')">Şimdi Değil</button>
   </div>
 </div>
 
@@ -1866,8 +2159,14 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
 
   <!-- ===== STATS ===== -->
   <div id="stats" class="screen has-tabbar" role="main" aria-label="İstatistikler">
-    <button class="back-nav" onclick="tabGo('home')">← <span data-i18n="back">Back</span></button>
-    <h3 style="font-family:'Playfair Display',serif;margin-bottom:18px;" data-i18n="statistics">Statistics</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <button class="back-nav" onclick="tabGo('home')" style="margin-bottom:0;">← <span data-i18n="back">Back</span></button>
+      <h3 style="font-family:'Playfair Display',serif;" data-i18n="statistics">Statistics</h3>
+      <button id="shareStatsBtn" onclick="shareStats()" aria-label="İstatistikleri paylaş"
+        style="background:none;border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;display:none;">
+        📤 Paylaş
+      </button>
+    </div>
     <canvas id="statsChart" style="max-height:240px;"></canvas>
     <div id="statsInfo" aria-live="polite"></div>
   </div>
@@ -2164,7 +2463,7 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 /* ============================================================
    V13 EVOLUTION — JAVASCRIPT ENGINE
    ============================================================ */
@@ -3320,6 +3619,35 @@ function showStats() {
     </div>`;
 
   document.getElementById('statsInfo').innerHTML = tilesHTML + quizDetailHTML + levelBreakdownHTML;
+
+  // Show share button only if Web Share API available
+  const shareBtn = document.getElementById('shareStatsBtn');
+  if (shareBtn) shareBtn.style.display = navigator.share ? 'block' : 'none';
+
+  // Store stats for share function
+  window._lastStats = { completedAll, totalReadings, quizAccuracy, vocabLearned, streak };
+}
+
+// ---- WEB SHARE API ----
+async function shareStats() {
+  const s = window._lastStats || {};
+  const lvl = getLvlConfig(db.lvl);
+  const user = getCurrentUser();
+  const name = user?.name || db.profile?.name || 'Ben';
+  const text =
+    `🌍 ${name} LinguiVance'da öğrenmeye devam ediyor!\n\n` +
+    `📖 ${s.completedAll || 0} metin tamamlandı\n` +
+    `🧠 ${s.vocabLearned || 0} kelime öğrenildi\n` +
+    `🎯 %${s.quizAccuracy || 0} quiz başarısı\n` +
+    `🔥 ${s.streak || 0} günlük seri\n` +
+    `${lvl.icon} Seviye: ${lvl.id} (${lvl.cefr})\n\n` +
+    `#LinguiVance #EnglishLearning`;
+
+  try {
+    await navigator.share({ title: 'LinguiVance İlerlemem', text });
+  } catch (e) {
+    if (e.name !== 'AbortError') notify('Paylaşım desteklenmiyor.');
+  }
 }
 
 // ---- AUDIO ----
@@ -3596,8 +3924,12 @@ function applyAuthToUI() {
 function authSwitchTab(tab) {
   document.getElementById('authFormLogin').classList.toggle('active', tab === 'login');
   document.getElementById('authFormReg').classList.toggle('active', tab === 'reg');
-  document.getElementById('authTabLogin').classList.toggle('active', tab === 'login');
-  document.getElementById('authTabReg').classList.toggle('active', tab === 'reg');
+  const btnLogin = document.getElementById('authTabLogin');
+  const btnReg   = document.getElementById('authTabReg');
+  btnLogin.classList.toggle('active', tab === 'login');
+  btnReg.classList.toggle('active',   tab === 'reg');
+  btnLogin.setAttribute('aria-selected', tab === 'login' ? 'true' : 'false');
+  btnReg.setAttribute('aria-selected',   tab === 'reg'   ? 'true' : 'false');
   document.getElementById('authErrLogin').style.display = 'none';
   document.getElementById('authErrReg').style.display = 'none';
 }
@@ -3608,11 +3940,35 @@ function authShowErr(formId, msg) {
   el.style.display = 'block';
 }
 
-function authLogin() {
+/* SHA-256 hash via Web Crypto API (async, no external lib needed) */
+async function hashPw(pw) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function authLogin() {
   const email = (document.getElementById('authLoginEmail').value || '').trim().toLowerCase();
   const pw    = document.getElementById('authLoginPw').value;
   if (!email || !pw) { authShowErr('authErrLogin', 'E-posta ve şifreyi girin.'); return; }
-  const user = getAuthUsers().find(u => u.email === email && atob(u.pw) === pw);
+
+  const hashed = await hashPw(pw);
+  let users = getAuthUsers();
+  let user  = users.find(u => u.email === email && u.pw === hashed);
+
+  // Backward-compat: migrate old btoa-encoded passwords on first login
+  if (!user) {
+    try {
+      const legacy = users.find(u => u.email === email && atob(u.pw) === pw);
+      if (legacy) {
+        const idx = users.findIndex(u => u.id === legacy.id);
+        users[idx].pw = hashed; // upgrade to SHA-256
+        localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+        user = users[idx];
+      }
+    } catch (_) { /* atob may throw on non-base64 pw — safe to ignore */ }
+  }
+
   if (!user) { authShowErr('authErrLogin', 'E-posta veya şifre hatalı.'); return; }
   localStorage.setItem(AUTH_SESSION_KEY, user.id);
   document.getElementById('authScreen').style.display = 'none';
@@ -3621,7 +3977,7 @@ function authLogin() {
   checkOnboarding();
 }
 
-function authRegister() {
+async function authRegister() {
   const name  = (document.getElementById('authRegName').value  || '').trim();
   const email = (document.getElementById('authRegEmail').value || '').trim().toLowerCase();
   const pw    = document.getElementById('authRegPw').value;
@@ -3634,7 +3990,7 @@ function authRegister() {
   if (users.find(u => u.email === email)) { authShowErr('authErrReg', 'Bu e-posta zaten kayıtlı.'); return; }
   const newUser = {
     id: 'u_' + Date.now(), name, email,
-    pw: btoa(pw),
+    pw: await hashPw(pw),        // SHA-256 hash, not plaintext
     isAdmin: users.length === 0,
     createdAt: new Date().toISOString()
   };
@@ -3666,6 +4022,13 @@ checkAuth(); // Auth kontrolü → giriş yoksa auth ekranı, varsa onboarding k
 let obSelectedLevel = db.lvl;
 let obSelectedGoal  = db.profile.goal || 10;
 let obSelectedAvatar = db.profile.avatar || '😊';
+
+function obTcToggle() {
+  const checked = document.getElementById('obTcCheck').checked;
+  const btn = document.getElementById('obStartBtn');
+  btn.disabled = !checked;
+  btn.style.opacity = checked ? '1' : '.45';
+}
 
 function obNext(step) {
   document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
@@ -4089,12 +4452,44 @@ function toggleSetting(key) {
   if (!db.settings) db.settings = {};
   db.settings[key] = !db.settings[key];
   if (key === 'notifications' && db.settings.notifications) {
-    Notification.requestPermission().then(p => {
-      if (p !== 'granted') { db.settings.notifications = false; }
+    // Check current permission state first
+    if (Notification.permission === 'denied') {
+      db.settings.notifications = false;
       updateToggleUI(); save();
-    });
+      notify('⚠️ Bildirimler engellendi. Tarayıcı ayarlarından izin verin.');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      updateToggleUI(); save();
+      notify('🔔 Bildirimler açık!');
+      return;
+    }
+    // 'default' — show custom explanation before browser prompt
+    openModal('notifPermModal');
+    db.settings.notifications = false; // reset until granted
   } else {
     updateToggleUI(); save();
+  }
+}
+
+async function requestNotifPermission() {
+  closeModal('notifPermModal');
+  const perm = await Notification.requestPermission();
+  if (!db.settings) db.settings = {};
+  db.settings.notifications = (perm === 'granted');
+  updateToggleUI(); save();
+  if (perm === 'granted') {
+    notify('🔔 Bildirimler etkinleştirildi!');
+    // Schedule a test notification
+    setTimeout(() => {
+      new Notification('LinguiVance 🌍', {
+        body: 'Harika! Günlük hatırlatmalar etkin.',
+        icon: './icons/icon-192x192.png',
+        badge: './icons/icon-72x72.png'
+      });
+    }, 1000);
+  } else {
+    notify('Bildirim izni verilmedi.');
   }
 }
 
@@ -4637,6 +5032,73 @@ function adminChangePw() {
 // Veriyi Ayarlar ekranındaki butonlarla veya Admin Paneli → Veri Yönetimi ile yükleyin.
 updateLoadStatus();
 
+/* ============================================================
+   ANDROID BACK BUTTON — History API
+   Kullanıcı geri tuşuna basınca:
+     1. Açık modal varsa → modal kapat
+     2. immersive screen (quiz, card, reading) → ana ekrana dön
+     3. Ana tab'da değilse → home'a git
+     4. Home'daysa → default browser davranışı (uygulama minimize)
+   ============================================================ */
+
+// Bir state push et (ilk yükleme için baseline)
+history.replaceState({ screen: 'home' }, '');
+
+// show() fonksiyonunu sararak her ekran geçişini history'e kaydet
+(function patchShow() {
+  const _show = show;
+  window.show = function(id) {
+    _show(id);
+    history.pushState({ screen: id }, '');
+  };
+})();
+
+// tabGo de show'u çağırdığı için tabGo'yu da patch et
+(function patchTabGo() {
+  const _tabGo = tabGo;
+  window.tabGo = function(tab) {
+    _tabGo(tab);
+    // tabGo içinde show() çağrısı zaten history push ediyor
+  };
+})();
+
+window.addEventListener('popstate', function(e) {
+  // 1. Açık modal varsa kapat
+  const openModal = document.querySelector('.modal-overlay.active');
+  if (openModal) {
+    openModal.classList.remove('active');
+    // Geri push ederek history'i yeniden dengeye getir
+    history.pushState({ screen: e.state?.screen || 'home' }, '');
+    return;
+  }
+
+  // 2. Reading modülü açıksa kapat
+  if (document.getElementById('readMod')?.classList.contains('active')) {
+    closeReadMod();
+    history.pushState({ screen: 'readList' }, '');
+    return;
+  }
+
+  // 3. Quiz/Card/Result gibi immersive screen'ler
+  const immersive = ['quizScreen', 'cardScreen', 'resultScreen'];
+  const activeImmersive = immersive.find(id => document.getElementById(id)?.classList.contains('active'));
+  if (activeImmersive) {
+    show('home');
+    tabGo('home');
+    return;
+  }
+
+  // 4. Home değilsek home'a git
+  const currentActive = document.querySelector('.screen.active');
+  if (currentActive && currentActive.id !== 'home') {
+    show('home');
+    tabGo('home');
+    history.pushState({ screen: 'home' }, '');
+    return;
+  }
+
+  // 5. Home'dayız → geri gitmesine izin ver (uygulama minimize olur)
+});
 
 </script>
 </body>

@@ -10,6 +10,7 @@ const DATA_CACHE = 'linguivance-data-v1';
 // Core app shell — always cache these
 const APP_SHELL = [
   './index.html',
+  './offline.html',
   './manifest.json',
   './kelimeler.js',
   './reading.js',
@@ -96,9 +97,9 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         return caches.match(request).then((cached) => {
           if (cached) return cached;
-          // Fallback to main HTML for navigation requests
+          // Fallback: navigation → offline page, others → 503
           if (request.mode === 'navigate') {
-            return caches.match('./index.html');
+            return caches.match('./offline.html') || caches.match('./index.html');
           }
           return new Response('Offline', { status: 503 });
         });
@@ -116,7 +117,7 @@ self.addEventListener('push', (event) => {
     badge: './icons/icon-72x72.png',
     tag: 'linguivance-reminder',
     renotify: true,
-    data: { url: data.url || './linguivance-v20.html' },
+    data: { url: data.url || './index.html' },
     actions: [
       { action: 'open', title: 'Start Learning' },
       { action: 'dismiss', title: 'Later' }
@@ -154,3 +155,10 @@ async function syncUserProgress() {
   // Future: sync user progress to server when back online
   console.log('[SW] Background sync triggered');
 }
+
+// ── SKIP WAITING (triggered by update banner) ──────────────
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
