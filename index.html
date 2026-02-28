@@ -2043,6 +2043,21 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
         <input type="file" id="readFile" style="display:none" accept=".json,.txt" onchange="handleFile(this,'read')">
       </div>
 
+      <!-- Sınavlar Durumu -->
+      <div style="background:var(--bg);border-radius:14px;padding:14px;margin-top:10px;border:2px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:.9rem;">📝 Sınavlar</div>
+            <div id="sinLoadStatus" style="font-size:.75rem;margin-top:3px;">Yüklü değil</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button onclick="refreshBuiltinData()" title="Yeniden Yükle" style="height:34px;padding:0 10px;background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;border-radius:9px;cursor:pointer;font-weight:700;font-size:.8rem;">🔄</button>
+            <button onclick="document.getElementById('sinFile').click()" style="height:34px;padding:0 12px;background:var(--lvl-main);color:white;border:none;border-radius:9px;cursor:pointer;font-weight:700;font-size:.78rem;">📂 JSON</button>
+          </div>
+        </div>
+        <input type="file" id="sinFile" style="display:none" accept=".json,.js,.txt" onchange="handleSinavFile(this)">
+      </div>
+
       <!-- Gizli textarea'lar -->
       <textarea id="wordPaste" style="display:none"></textarea>
       <textarea id="readPaste" style="display:none"></textarea>
@@ -2911,7 +2926,7 @@ function renderReadingContent() {
       span.className = 'word-span';
       span.dataset.wi = wordIndex++;   // TTS highlight için index
       const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
-      const dictMatch = clean ? db.dictionary.find(x => x.w === clean) : null;
+      const dictMatch = clean ? findDictWord(rawWord) : null;
 
       // Tooltip oluştur (sözlükte varsa anlam göster)
       if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
@@ -3065,18 +3080,25 @@ function handleFile(input, type) {
 function updateLoadStatus() {
   const ws = document.getElementById('wordLoadStatus');
   const rs = document.getElementById('readLoadStatus');
-  const dictSrc = (typeof KELIMELER !== 'undefined' && KELIMELER.length > 0) ? 'kelimeler.js'
-    : (localStorage.getItem(DICT_CACHE_KEY) ? 'önbellekten' : '');
-  const readSrc = (typeof READINGS !== 'undefined' && READINGS.length > 0) ? 'reading.js'
-    : (localStorage.getItem(READ_CACHE_KEY) ? 'önbellekten' : '');
+  const ss = document.getElementById('sinLoadStatus');
+  const jsDict = (typeof KELIMELER !== 'undefined' && KELIMELER.length > 0) || (typeof WORD_DATA !== 'undefined' && WORD_DATA.length > 0);
+  const jsRead = (typeof READINGS !== 'undefined' && READINGS.length > 0) || (typeof READING_DATA !== 'undefined' && READING_DATA);
+  const jsSin  = (typeof sinavlarVerisi !== 'undefined' && sinavlarVerisi.length > 0);
+  const dictSrc = jsDict ? 'kelimeler.js' : (localStorage.getItem(DICT_CACHE_KEY) ? 'önbellekten' : '');
+  const readSrc = jsRead ? 'reading.js'   : (localStorage.getItem(READ_CACHE_KEY)  ? 'önbellekten' : '');
+  const sinCnt  = jsSin  ? sinavlarVerisi.length : 0;
+  const ok  = c => '<span style="color:#16a34a;font-weight:600;">' + c + '</span>';
+  const err = c => '<span style="color:#ef4444;font-weight:600;">' + c + '</span>';
+  const src = s => '<span style="color:var(--muted);margin-left:5px;font-size:.7rem;">(' + s + ')</span>';
   if (ws) ws.innerHTML = db.dictionary.length > 0
-    ? '<span style="color:#16a34a;font-weight:600;">✅ ' + db.dictionary.length + ' kelime yüklü</span>'
-      + (dictSrc ? '<span style="color:var(--muted);margin-left:5px;font-size:.7rem;">(' + dictSrc + ')</span>' : '')
-    : '<span style="color:#ef4444;font-weight:600;">⚠️ Yüklü değil — 🔄 veya 📂 kullanın</span>';
+    ? ok('✅ ' + db.dictionary.length + ' kelime yüklü') + (dictSrc ? src(dictSrc) : '')
+    : err('⚠️ Yüklü değil — 🔄 veya 📂 kullanın');
   if (rs) rs.innerHTML = db.readings.length > 0
-    ? '<span style="color:#16a34a;font-weight:600;">✅ ' + db.readings.length + ' metin yüklü</span>'
-      + (readSrc ? '<span style="color:var(--muted);margin-left:5px;font-size:.7rem;">(' + readSrc + ')</span>' : '')
-    : '<span style="color:#ef4444;font-weight:600;">⚠️ Yüklü değil — 🔄 veya 📂 kullanın</span>';
+    ? ok('✅ ' + db.readings.length + ' metin yüklü') + (readSrc ? src(readSrc) : '')
+    : err('⚠️ Yüklü değil — 🔄 veya 📂 kullanın');
+  if (ss) ss.innerHTML = sinCnt > 0
+    ? ok('✅ ' + sinCnt + ' sınav yüklü') + src('sinavlar.js')
+    : err('⚠️ Yüklü değil — 🔄 veya 📂 kullanın');
 }
 function handlePaste(type) {
   const el = document.getElementById(type === 'word' ? 'wordPaste' : 'readPaste');
@@ -3393,7 +3415,7 @@ function renderQuestion() {
     const span = document.createElement('span');
     span.className = 'word-span';
     const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
-    const dictMatch = clean ? db.dictionary.find(x => x.w === clean) : null;
+    const dictMatch = clean ? findDictWord(rawWord) : null;
 
     if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
       const tip = document.createElement('span');
@@ -3858,36 +3880,51 @@ function resetAllLegacy() {
 // ---- INIT ----
 load();
 
-// ---- VERİ BAŞLATMA (kelimeler.js + reading.js + localStorage cache) ----
-// Öncelik: 1) kelimeler.js/reading.js  2) localStorage cache  3) boş
+// ---- VERİ BAŞLATMA (kelimeler.js + reading.js + sinavlar.js + localStorage cache) ----
+// Öncelik: 1) JS dosyası (herhangi bir değişken adı)  2) localStorage cache  3) boş
 function injectBuiltinData() {
-  // ---- KELIMELER ----
+  // ---- KELIMELER (WORD_DATA veya KELIMELER) ----
   try {
-    if (typeof KELIMELER !== 'undefined' && Array.isArray(KELIMELER) && KELIMELER.length > 0) {
-      const sample = KELIMELER[0];
-      db.dictionary = sample.w ? KELIMELER : KELIMELER.map(normalizeWord).filter(w => w.w);
+    const rawWords = (typeof KELIMELER   !== 'undefined' && Array.isArray(KELIMELER)   && KELIMELER.length   > 0) ? KELIMELER
+                   : (typeof WORD_DATA   !== 'undefined' && Array.isArray(WORD_DATA)   && WORD_DATA.length   > 0) ? WORD_DATA
+                   : null;
+    if (rawWords) {
+      const sample = rawWords[0];
+      db.dictionary = sample.w ? rawWords : rawWords.map(normalizeWord).filter(w => w.w);
       try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(db.dictionary)); } catch(e) {}
       console.log('✅ kelimeler.js: ' + db.dictionary.length + ' kelime');
     } else {
       const cached = JSON.parse(localStorage.getItem(DICT_CACHE_KEY) || 'null');
       if (cached && cached.length > 0) { db.dictionary = cached; console.log('✅ kelimeler cache: ' + db.dictionary.length); }
-      else console.warn('⚠️ Kelime verisi bulunamadı (KELIMELER undefined, cache yok)');
+      else console.warn('⚠️ Kelime verisi yok (KELIMELER/WORD_DATA undefined, cache yok)');
     }
   } catch(e) { console.error('❌ injectBuiltinData kelime hatası:', e); }
 
-  // ---- READINGS ----
+  // ---- READINGS (READING_DATA.reading_data veya READINGS) ----
   try {
-    if (typeof READINGS !== 'undefined' && Array.isArray(READINGS) && READINGS.length > 0) {
-      const sample = READINGS[0];
-      db.readings = (sample.en && sample.qs) ? READINGS : READINGS.map(normalizeReading).filter(r => r.title);
+    const rawReads = (typeof READINGS      !== 'undefined' && Array.isArray(READINGS)             && READINGS.length      > 0) ? READINGS
+                   : (typeof READING_DATA  !== 'undefined' && READING_DATA && Array.isArray(READING_DATA.reading_data)) ? READING_DATA.reading_data
+                   : null;
+    if (rawReads) {
+      const sample = rawReads[0];
+      db.readings = (sample.en && sample.qs) ? rawReads : rawReads.map(normalizeReading).filter(r => r.title);
       try { localStorage.setItem(READ_CACHE_KEY, JSON.stringify(db.readings)); } catch(e) {}
       console.log('✅ reading.js: ' + db.readings.length + ' metin');
     } else {
       const cached = JSON.parse(localStorage.getItem(READ_CACHE_KEY) || 'null');
       if (cached && cached.length > 0) { db.readings = cached; console.log('✅ readings cache: ' + db.readings.length); }
-      else console.warn('⚠️ Reading verisi bulunamadı (READINGS undefined, cache yok)');
+      else console.warn('⚠️ Reading verisi yok (READINGS/READING_DATA undefined, cache yok)');
     }
   } catch(e) { console.error('❌ injectBuiltinData reading hatası:', e); }
+
+  // ---- SINAVLAR (sinavlarVerisi) ----
+  try {
+    if (typeof sinavlarVerisi !== 'undefined' && Array.isArray(sinavlarVerisi) && sinavlarVerisi.length > 0) {
+      if (typeof loadPlacementFromGlobal === 'function') loadPlacementFromGlobal();
+      if (typeof loadGateFromGlobal === 'function') loadGateFromGlobal();
+      console.log('✅ sinavlar.js: ' + sinavlarVerisi.length + ' sınav');
+    }
+  } catch(e) { console.error('❌ injectBuiltinData sınav hatası:', e); }
 }
 injectBuiltinData(); // İlk yükleme
 
@@ -3896,7 +3933,8 @@ function refreshBuiltinData() {
   injectBuiltinData();
   updateLoadStatus();
   if (typeof renderAdminDataInfo === 'function') renderAdminDataInfo();
-  notify('🔄 Veri yenilendi: ' + db.dictionary.length + ' kelime, ' + db.readings.length + ' metin');
+  const sinCnt = (typeof sinavlarVerisi !== 'undefined') ? sinavlarVerisi.length : 0;
+  notify('🔄 Yenilendi: ' + db.dictionary.length + ' kelime, ' + db.readings.length + ' metin, ' + sinCnt + ' sınav');
 }
 buildLevelGrid();
 applyLevel(db.lvl);
@@ -4924,6 +4962,58 @@ function adminLoadJsonFile(type) {
    1) Uygulama iç format:  { lvl, title, en, tr, qs:[{q,A,B,C,D,correct}] }
    2) Gerçek JSON format:  { title, content, translation, questions:[{question,options,answer}] }
 */
+// ---- KELIME KÖK BULMA (basit İngilizce stemmer) ----
+// "abandoned" → ["abandoned","abandon","abandone"]
+// "running"   → ["running","run","runne"]
+// "takes"     → ["takes","take"]
+function stemWord(word) {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (w.length < 3) return [w];
+  const stems = new Set([w]);
+  // -ing: running→run, taking→take, abandoning→abandon
+  if (w.endsWith('ing') && w.length > 5) {
+    const s = w.slice(0, -3);
+    stems.add(s);           // run (double consonant case)
+    stems.add(s + 'e');     // take
+    if (s.length >= 3 && s[s.length - 1] === s[s.length - 2]) stems.add(s.slice(0, -1)); // running→run
+  }
+  // -ed: abandoned→abandon, used→use, stopped→stop
+  if (w.endsWith('ed') && w.length > 4) {
+    const s = w.slice(0, -2);
+    stems.add(s);           // abandon
+    stems.add(s + 'e');     // use
+    if (s.length >= 3 && s[s.length - 1] === s[s.length - 2]) stems.add(s.slice(0, -1)); // stopped→stop
+  }
+  // -es: takes→take, goes→go
+  if (w.endsWith('es') && w.length > 4) { stems.add(w.slice(0, -2)); stems.add(w.slice(0, -1)); }
+  // -s: runs→run, takes→take
+  if (w.endsWith('s') && !w.endsWith('ss') && w.length > 4) stems.add(w.slice(0, -1));
+  // -er / -est: bigger→big, fastest→fast
+  if (w.endsWith('er') && w.length > 4) { stems.add(w.slice(0, -2)); stems.add(w.slice(0, -2) + 'e'); }
+  if (w.endsWith('est') && w.length > 5) { stems.add(w.slice(0, -3)); stems.add(w.slice(0, -3) + 'e'); }
+  // -ly: quickly→quick
+  if (w.endsWith('ly') && w.length > 4) stems.add(w.slice(0, -2));
+  // -tion / -ation: examination→examine
+  if (w.endsWith('ation') && w.length > 7) stems.add(w.slice(0, -5) + 'e');
+  if (w.endsWith('tion') && w.length > 6)  stems.add(w.slice(0, -4));
+  return [...stems];
+}
+
+// Kelimeni sözlükte ara — önce tam eşleşme, sonra kök tabanlı
+function findDictWord(word) {
+  if (!word || !db.dictionary.length) return null;
+  const clean = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!clean) return null;
+  let match = db.dictionary.find(x => x.w === clean);
+  if (match) return match;
+  for (const stem of stemWord(clean)) {
+    if (stem === clean) continue;
+    match = db.dictionary.find(x => x.w === stem);
+    if (match) return match;
+  }
+  return null;
+}
+
 function normalizeWord(raw) {
   // Zaten iç formatta mı?
   if (raw.w) return raw;
@@ -4994,6 +5084,11 @@ function parseJsonReadings(text) {
   const arr = Array.isArray(parsed) ? parsed
     : parsed.readings || parsed.stories || parsed.reading_data || [];
   return arr.map(normalizeReading).filter(r => r.title);
+}
+
+// Sınavlar dosyası yükle (Veri Durumu panelindeki 📂 butonu)
+function handleSinavFile(input) {
+  adminHandleFile(input, 'sinav');
 }
 
 function adminHandleFile(input, type) {

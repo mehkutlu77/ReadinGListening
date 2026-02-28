@@ -3,9 +3,9 @@
    Offline-first caching strategy
    ============================================================ */
 
-const CACHE_NAME = 'linguivance-v6';
-const STATIC_CACHE = 'linguivance-static-v3';
-const DATA_CACHE = 'linguivance-data-v3';
+const CACHE_NAME = 'linguivance-v7';
+const STATIC_CACHE = 'linguivance-static-v7';
+const DATA_CACHE = 'linguivance-data-v7';
 
 // Core app shell — always cache these
 const APP_SHELL = [
