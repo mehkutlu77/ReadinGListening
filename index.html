@@ -1543,8 +1543,8 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
     <!-- Login Form -->
     <div class="auth-form active" id="authFormLogin" role="tabpanel" aria-labelledby="authTabLogin">
       <div class="auth-field">
-        <label for="authLoginEmail">E-posta</label>
-        <input type="email" id="authLoginEmail" placeholder="ornek@mail.com" autocomplete="email" aria-required="true" aria-describedby="authErrLogin">
+        <label for="authLoginEmail">E-posta / Kullanıcı Adı</label>
+        <input type="text" id="authLoginEmail" placeholder="ornek@mail.com veya kullanıcı adı" autocomplete="username email" aria-required="true" aria-describedby="authErrLogin">
       </div>
       <div class="auth-field">
         <label for="authLoginPw">Şifre</label>
@@ -2010,7 +2010,7 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
     <button class="back-nav" onclick="tabGo('home')">← <span data-i18n="back">Back</span></button>
     <h3 style="margin-bottom:18px; font-family:'Playfair Display',serif;" data-i18n="dataCenter">Data Management</h3>
 
-    <div class="settings-group" id="adminContentSection">
+    <div class="settings-group" id="adminContentSection" style="display:none;">
       <div class="settings-group-title">İçerik Yükleme</div>
 
       <!-- Kelime JSON -->
@@ -2088,18 +2088,19 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
         <button class="back-nav" style="margin-bottom:0; flex-shrink:0;" onclick="stopS(); show('readList')">← <span data-i18n="back">Back</span></button>
         <div class="reading-title" id="readTitle" style="flex:1;margin:0;text-align:center;font-size:.95rem;"></div>
-        <div style="display:flex;gap:6px;flex-shrink:0;">
-          <button id="readDarkBtn" title="Gece Modu" aria-label="Gece Modunu Aç/Kapat" onclick="toggleReadDark()" style="height:34px;width:34px;border-radius:50%;border:none;background:var(--border);cursor:pointer;font-size:1rem;">🌙</button>
-          <button class="btn btn-warning" id="readLangToggle" aria-label="Dil: Türkçe/İngilizce" style="height:34px;width:auto;padding:0 10px;font-size:.78rem;margin:0;" onclick="toggleReadLang()">🌐 TR</button>
+        <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;">
+          <button onclick="readFontSmaller()" title="Yazı Küçült" aria-label="Yazı boyutunu küçült" style="height:30px;min-width:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:.8rem;font-weight:700;color:var(--text);line-height:1;">A−</button>
+          <button onclick="readFontBigger()"  title="Yazı Büyüt"  aria-label="Yazı boyutunu büyüt"  style="height:30px;min-width:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:.95rem;font-weight:700;color:var(--text);line-height:1;">A+</button>
+          <button id="readDarkBtn" title="Gece Modu" aria-label="Gece Modunu Aç/Kapat" onclick="toggleReadDark()" style="height:30px;width:30px;border-radius:50%;border:none;background:var(--border);cursor:pointer;font-size:.9rem;">🌙</button>
+          <button class="btn btn-warning" id="readLangToggle" aria-label="Dil: Türkçe/İngilizce" style="height:30px;width:auto;padding:0 9px;font-size:.75rem;margin:0;" onclick="toggleReadLang()">🌐 TR</button>
         </div>
       </div>
       <!-- Ses kontrolleri + Quiz butonu -->
       <div style="display:flex;align-items:center;gap:6px;padding:8px 0 2px;">
         <div class="audio-capsule" style="flex:1;">
           <button onclick="playS()" title="Baştan Oynat">▶</button>
-          <button onclick="resumeS()" title="Devam Et">⏯</button>
-          <button onclick="pauseS()" title="Duraklat">⏸</button>
-          <button onclick="stopS()" title="Durdur">⏹</button>
+          <button onclick="pauseToggleS()" id="pauseBtn" title="Duraklat">⏸</button>
+          <button onclick="stopS()" title="Tamamen Durdur">⏹</button>
           <div class="speed-wrap">
             <input type="range" id="speed" min="0.5" max="1.5" step="0.1" value="1" oninput="updateSpd()">
             <span class="speed-label" id="speedVal">1.0×</span>
@@ -2176,7 +2177,7 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
         📤 Paylaş
       </button>
     </div>
-    <canvas id="statsChart" style="max-height:240px;"></canvas>
+    <canvas id="statsChart" style="display:none;"></canvas>
     <div id="statsInfo" aria-live="polite"></div>
   </div>
 
@@ -2562,6 +2563,8 @@ const QUOTES = {
 
 // ---- PERSISTENCE ----
 const STORAGE_KEY = 'master_eng_v13';
+const DICT_CACHE_KEY = 'lv_dict_cache_v1';  // kelimeler kalıcı cache
+const READ_CACHE_KEY = 'lv_read_cache_v1';  // readings kalıcı cache
 
 // Kaydetme: dictionary ve readings HARİÇ (bunlar JS dosyasından gelir)
 // Sadece kullanıcı verisini kaydet: profil, kelime kasası, istatistik, ayarlar
@@ -2964,22 +2967,26 @@ function processInput(text, type) {
       const trimmed = line.trim();
       if (!trimmed) return;
       const p = trimmed.split('|').map(x => x.trim());
-      if (p.length >= 9) {
-        // Full 10-field format: w|tr|te|tt|de|dt|e1|e1t|e2|e2t
-        // Partial 9-field format: w|tr|te|de|dt|e1|e1t|e2|e2t (no tt)
-        const has10 = p.length >= 10;
-        db.dictionary.push({
-          w:   p[0].toLowerCase(),
-          tr:  p[1],
-          te:  p[2],
-          tt:  has10 ? p[3] : p[2],          // fallback: use te if tt missing
-          de:  has10 ? p[4] : p[3],
-          dt:  has10 ? p[5] : p[4],
-          e1:  has10 ? p[6] : p[5],
-          e1t: has10 ? p[7] : p[6],
-          e2:  has10 ? p[8] : p[7],
-          e2t: has10 ? p[9] : (p[8] || ''),
-        });
+      // Yeni format: ilk alan CEFR seviyesi mi? (A1|A2|B1|B2|C1|C2)
+      const hasLevel = /^(A1|A2|B1|B2|C1|C2)$/i.test(p[0]);
+      const o = hasLevel ? 1 : 0; // offset
+      if (p.length >= 9 + o) {
+        // 10+o alanlı tam format, 9+o alanlı kısmi format (tt yok)
+        const has10 = p.length >= 10 + o;
+        const entry = {
+          w:   p[o].toLowerCase(),
+          tr:  p[o+1],
+          te:  p[o+2],
+          tt:  has10 ? p[o+3] : p[o+2],
+          de:  has10 ? p[o+4] : p[o+3],
+          dt:  has10 ? p[o+5] : p[o+4],
+          e1:  has10 ? p[o+6] : p[o+5],
+          e1t: has10 ? p[o+7] : p[o+6],
+          e2:  has10 ? p[o+8] : p[o+7],
+          e2t: has10 ? p[o+9] : (p[o+8] || ''),
+        };
+        if (hasLevel) entry.cefr = p[0].toUpperCase();
+        db.dictionary.push(entry);
         added++;
       }
     });
@@ -3024,6 +3031,7 @@ function handleFile(input, type) {
           if (arr.length === 0) { notify('❌ Kelime bulunamadı — format kontrol et'); return; }
           db.dictionary = arr;
           save();
+          try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(arr)); } catch(e) {}
           updateLoadStatus();
           notify(`✅ ${arr.length} kelime yüklendi`);
         } else {
@@ -3031,6 +3039,7 @@ function handleFile(input, type) {
           if (arr.length === 0) { notify('❌ Okuma metni bulunamadı — format kontrol et'); return; }
           db.readings = arr;
           save();
+          try { localStorage.setItem(READ_CACHE_KEY, JSON.stringify(arr)); } catch(e) {}
           updateLoadStatus();
           notify(`✅ ${arr.length} okuma metni yüklendi`);
         }
@@ -3097,51 +3106,39 @@ function openDictCards() {
   if (db.dictionary.length === 0) { notify('Önce Ayarlar\'dan kelime yükleyin! 📂'); return; }
   cardSource = 'dict';
 
-  // Dinamik Kelime Algoritması:
-  // Kullanıcının seviyesine göre kelime tipi dağılımı belirle
   const CEFR_ORDER = ['A1','A2','B1','B2','C1','C2'];
   const currentCefr = getLvlConfig(db.lvl).cefr; // örn: "B1"
   const currentIdx  = CEFR_ORDER.indexOf(currentCefr);
-
-  // Hedef kelime sayısı
   const TOTAL = Math.min(30, db.dictionary.length);
-  const REINFORCE_RATIO = 0.25; // %25 alt seviye pekiştirme
+  const shuffle = arr => [...arr].sort(() => Math.random() - .5);
 
-  const reinforceCount = Math.round(TOTAL * REINFORCE_RATIO);
-  const mainCount      = TOTAL - reinforceCount;
+  // Seviye alanı olan kelime var mı?
+  const hasCefrField = db.dictionary.some(w => w.cefr || w.level);
 
-  // Kelimeler seviye alanına göre filtrele (yoksa rastgele)
-  // Sözlüğümüzde seviye alanı yoksa tüm sözlük rastgele
-  const hasCefrField = db.dictionary[0]?.cefr || db.dictionary[0]?.level;
-
-  let mainPool, reinforcePool;
+  let pool;
   if (hasCefrField) {
-    mainPool      = db.dictionary.filter(w => w.cefr === currentCefr || w.level === currentCefr);
-    reinforcePool = db.dictionary.filter(w => {
-      const wCefr = w.cefr || w.level || '';
+    // Kullanıcının seviyesi VE alt seviyelerindeki tüm kelimeler
+    pool = db.dictionary.filter(w => {
+      const wCefr = (w.cefr || w.level || '').toUpperCase();
       const wIdx  = CEFR_ORDER.indexOf(wCefr);
-      return wIdx >= 0 && wIdx < currentIdx;
+      return wIdx >= 0 && wIdx <= currentIdx;
     });
   } else {
-    // Seviye alanı yoksa tümü aynı havuz — kasa öncelikli karma
-    mainPool      = db.dictionary.filter(w => !db.unknown.find(u => u.w === w.w));
-    reinforcePool = db.unknown.slice();
+    // Seviye alanı yoksa tüm sözlük
+    pool = db.dictionary.slice();
   }
 
-  const shuffle = arr => [...arr].sort(() => Math.random() - .5);
-  const mainWords      = shuffle(mainPool).slice(0, mainCount);
-  const reinforceWords = shuffle(reinforcePool).slice(0, reinforceCount);
-
-  // Karıştır: %75 seviye kelimeleri + %25 pekiştirme
-  cardList = shuffle([...mainWords, ...reinforceWords]);
+  cardList = shuffle(pool).slice(0, TOTAL);
   if (cardList.length === 0) {
-    // Fallback: tüm sözlük
     cardList = shuffle(db.dictionary).slice(0, TOTAL);
   }
 
   cardIdx = 0; isEngMode = true;
   const lbl = document.getElementById('cardModeLabel');
-  if (lbl) lbl.textContent = `📚 ${currentCefr} Seviye — ${cardList.length} kelime (${reinforceWords.length} pekiştirme)`;
+  const levelLabel = hasCefrField
+    ? `${currentCefr} ve altı — ${cardList.length} kelime`
+    : `${cardList.length} kelime`;
+  if (lbl) lbl.textContent = `📚 ${levelLabel}`;
   show('cardScreen');
   renderCard();
 }
@@ -3524,38 +3521,7 @@ function finishQuiz() {
 function showStats() {
   show('stats');
 
-  // Chart (try/catch: Chart.js CDN yüklenemese bile stat tile'lar görünsün)
-  try {
-    const ctx = document.getElementById('statsChart').getContext('2d');
-    if (window.chart) window.chart.destroy();
-    const chartData = LEVELS.map(l => {
-      return db.readings.filter(r => (r.lvl === l.cefr || r.lvl === l.id) && db.stats.completed[r.title]).length;
-    });
-    window.chart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: LEVELS.map(l => `${l.icon}`),
-        datasets: [{
-          label: 'Tamamlanan',
-          data: chartData,
-          backgroundColor: LEVELS.map(l => l.color + 'dd'),
-          borderColor: LEVELS.map(l => l.dark),
-          borderWidth: 2,
-          borderRadius: 10,
-        }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-          x: { grid: { display: false } }
-        }
-      }
-    });
-    document.getElementById('statsChart').style.display = '';
-  } catch(e) {
-    document.getElementById('statsChart').style.display = 'none';
-  }
+  // Chart kaldırıldı (4. düzeltme)
 
   // Calculate all stats
   const totalReadings    = db.readings.length;
@@ -3665,6 +3631,12 @@ async function shareStats() {
 // ---- AUDIO ----
 let synth = window.speechSynthesis, isPlaying = false;
 
+// TTS modül-seviyesi durum — pause/resume güvenilirliği için
+let ttsSegs = [], ttsSegIdx = 0, ttsWi = 0, ttsSpd = 1, ttsGen = 0;
+// Timer tabanlı highlight (onboundary desteklemeyen tarayıcılar için)
+let _hlTimers = [];
+function _clearHlTimers() { _hlTimers.forEach(clearTimeout); _hlTimers = []; }
+
 function highlightWord(idx) {
   document.querySelectorAll('#readArea .is-speaking').forEach(el => el.classList.remove('is-speaking'));
   if (idx === null) return;
@@ -3674,94 +3646,119 @@ function highlightWord(idx) {
   span.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
+function _ttsSpeakNext(gen) {
+  if (gen !== ttsGen || !isPlaying) return;
+  if (ttsSegIdx >= ttsSegs.length) {
+    // Bitti
+    highlightWord(null); isPlaying = false;
+    const btn = document.getElementById('pauseBtn');
+    if (btn) { btn.title = 'Duraklat'; btn.textContent = '⏸'; }
+    return;
+  }
+  const seg = ttsSegs[ttsSegIdx];
+  const u   = new SpeechSynthesisUtterance(seg.text);
+  u.rate = ttsSpd; u.lang = 'en-US';
+  const startWi = ttsWi;
+  let lWi = 0;
+  let _boundaryFired = false; // onboundary çalışıyorsa timer'ı iptal et
+
+  // onstart: timer tabanlı kelime-kelime highlight (onboundary olmayan tarayıcılar için)
+  u.onstart = () => {
+    if (gen !== ttsGen) return;
+    _clearHlTimers();
+    _boundaryFired = false;
+    // Her kelime için yaklaşık süre (280ms / 1x hız, hız arttıkça azalır)
+    const msPerWord = Math.max(80, Math.round(280 / ttsSpd));
+    for (let i = 0; i < seg.wordCount; i++) {
+      const wi = startWi + i;
+      const t = setTimeout(() => {
+        if (gen !== ttsGen || _boundaryFired) return;
+        highlightWord(wi);
+      }, i * msPerWord);
+      _hlTimers.push(t);
+    }
+  };
+
+  // onboundary: Chrome/Edge'de kelime sınırında tetiklenir → timer'ı iptal et, gerçek zamanlı yap
+  u.onboundary = e => {
+    if (gen !== ttsGen) return;
+    if (e.name === 'word') {
+      if (!_boundaryFired) {
+        _boundaryFired = true;
+        _clearHlTimers(); // Timer fallback artık gerekli değil
+      }
+      highlightWord(startWi + lWi);
+      lWi++;
+    }
+  };
+
+  u.onend = () => {
+    if (gen !== ttsGen) return;
+    ttsWi += seg.wordCount; ttsSegIdx++;
+    if (!isPlaying) { highlightWord(null); return; }
+    seg.pause > 0
+      ? setTimeout(() => _ttsSpeakNext(gen), Math.round(seg.pause / ttsSpd))
+      : _ttsSpeakNext(gen);
+  };
+
+  // Hata (genellikle synth.cancel() sonrası tetiklenir) — eski gen ise yoksay
+  u.onerror = () => { if (gen !== ttsGen) return; highlightWord(null); isPlaying = false; };
+
+  synth.speak(u);
+}
+
 function playS() {
   if (readLangMode === 'TR') { notify('Ses sadece İngilizce modda çalışır'); return; }
-  synth.cancel(); isPlaying = true;
-  const speed = parseFloat(document.getElementById('speed').value);
-  const lines = (activeR?.en || '').trim().split('\n');
+  ttsGen++; synth.cancel(); isPlaying = true;
+  ttsSpd = parseFloat(document.getElementById('speed').value);
+  const lines    = (activeR?.en || '').trim().split('\n');
   const fullText = lines.length > 1 ? lines.slice(1).join(' ') : (lines[0] || '');
 
-  // Metni cümlelere böl (nokta ve virgül sınırları)
-  // Her segment doğal akışla okunacak
-  const segments = [];
-  let cur = '';
+  // Metni segmentlere böl (nokta/virgül sınırları)
+  ttsSegs = []; let cur = '';
   fullText.split(/([,\.])/).forEach(part => {
-    if (part === ',' || part === '.') {
-      if (cur.trim()) segments.push({ text: cur.trim(), pause: part === '.' ? 300 : 125 });
-      cur = '';
-    } else {
-      cur += part;
-    }
+    if (part === ',' || part === '.') { if (cur.trim()) ttsSegs.push({ text: cur.trim(), pause: part === '.' ? 300 : 125 }); cur = ''; }
+    else cur += part;
   });
-  if (cur.trim()) segments.push({ text: cur.trim(), pause: 0 });
+  if (cur.trim()) ttsSegs.push({ text: cur.trim(), pause: 0 });
+  ttsSegs.forEach(s => { s.wordCount = s.text.split(/\s+/).filter(w => w.trim()).length; });
 
-  // Tüm kelimelerin düz listesi (highlight için)
-  const allWords = fullText.split(/\s+/).filter(w => w.trim());
-  let globalWi = 0; // mevcut kelime indexi
-
-  // Her segment için kelime sayısını hesapla
-  segments.forEach(seg => {
-    seg.wordCount = seg.text.split(/\s+/).filter(w => w.trim()).length;
-  });
-
-  let segIdx = 0;
-
-  function speakSegment() {
-    if (segIdx >= segments.length || !isPlaying) {
-      highlightWord(null);
-      isPlaying = false;
-      return;
-    }
-    const seg = segments[segIdx];
-    const u = new SpeechSynthesisUtterance(seg.text);
-    u.rate = speed;
-    u.lang = 'en-US';
-
-    // onboundary: tarayıcı kelime sınırını bildirdiğinde highlight yap
-    const segStartWi = globalWi;
-    let localWi = 0;
-    u.onboundary = (e) => {
-      if (e.name === 'word') {
-        highlightWord(segStartWi + localWi);
-        localWi++;
-      }
-    };
-
-    u.onend = () => {
-      globalWi += seg.wordCount;
-      segIdx++;
-      if (!isPlaying) { highlightWord(null); return; }
-      if (seg.pause > 0) {
-        setTimeout(speakSegment, Math.round(seg.pause / speed));
-      } else {
-        speakSegment();
-      }
-    };
-    u.onerror = () => { highlightWord(null); isPlaying = false; };
-    synth.speak(u);
-  }
-
-  speakSegment();
+  ttsSegIdx = 0; ttsWi = 0;
+  const btn = document.getElementById('pauseBtn');
+  if (btn) { btn.title = 'Duraklat'; btn.textContent = '⏸'; }
+  _ttsSpeakNext(ttsGen);
 }
 
-function pauseS() {
-  isPlaying = false;
-  synth.pause();
-  document.querySelectorAll('#readArea .is-speaking').forEach(el => el.classList.remove('is-speaking'));
-}
-function resumeS() {
-  // Durdurulduysa devam et, hiç başlamadıysa baştan başlat
-  if (synth.paused) {
+function pauseToggleS() {
+  const btn = document.getElementById('pauseBtn');
+  if (isPlaying) {
+    // Çalıyor → duraklat (segIdx sakla)
+    isPlaying = false;
+    _clearHlTimers();
+    ttsGen++; synth.cancel(); // mevcut utterance'ı durdur, eski gen geçersiz olur
+    document.querySelectorAll('#readArea .is-speaking').forEach(el => el.classList.remove('is-speaking'));
+    if (btn) { btn.title = 'Devam Et'; btn.textContent = '▶'; }
+  } else if (ttsSegs.length > 0 && ttsSegIdx < ttsSegs.length) {
+    // Duraklatılmış → kaldığı yerden devam et
     isPlaying = true;
-    synth.resume();
-  } else if (!isPlaying) {
+    const gen = ++ttsGen;
+    if (btn) { btn.title = 'Duraklat'; btn.textContent = '⏸'; }
+    _ttsSpeakNext(gen);
+  } else {
+    // Hiç başlamamış → baştan
     playS();
   }
 }
+function pauseS()  { pauseToggleS(); }
+function resumeS() { if (!isPlaying) pauseToggleS(); }
+
 function stopS() {
-  isPlaying = false;
-  synth.cancel();
+  isPlaying = false; ttsSegIdx = 0; ttsWi = 0; ttsSegs = [];
+  _clearHlTimers();
+  ttsGen++; synth.cancel();
   document.querySelectorAll('#readArea .is-speaking').forEach(el => el.classList.remove('is-speaking'));
+  const btn = document.getElementById('pauseBtn');
+  if (btn) { btn.title = 'Duraklat'; btn.textContent = '⏸'; }
 }
 
 let readDarkMode = false;
@@ -3776,6 +3773,16 @@ function toggleReadDark() {
   area.style.background = readDarkMode ? '#0f0f1a' : '';
   area.style.color = readDarkMode ? '#e2d9c8' : '';
 }
+
+// ---- YAZI BOYUTU ----
+let readFontSize = 1.0; // rem (başlangıç)
+function _applyReadFont() {
+  const area = document.getElementById('readArea');
+  if (area) area.style.fontSize = readFontSize.toFixed(1) + 'rem';
+}
+function readFontBigger()  { readFontSize = Math.min(1.8, +(readFontSize + 0.1).toFixed(1)); _applyReadFont(); }
+function readFontSmaller() { readFontSize = Math.max(0.7, +(readFontSize - 0.1).toFixed(1)); _applyReadFont(); }
+
 function updateSpd() {
   const v = document.getElementById('speed').value;
   document.getElementById('speedVal').innerText = parseFloat(v).toFixed(1) + '×';
@@ -3840,24 +3847,45 @@ function resetAllLegacy() {
 // ---- INIT ----
 load();
 
-// kelimeler.js ve reading.js her açılışta yüklenir — localStorage'a yazılmaz
-// Veri her zaman JS dosyasından gelir, localStorage sadece kullanıcı verisini tutar
+// ---- VERİ BAŞLATMA (kelimeler.js + reading.js + localStorage cache) ----
+// Öncelik: 1) kelimeler.js/reading.js (en güncel)  2) localStorage cache  3) boş
 (function injectBuiltinData() {
-  // kelimeler.js → const KELIMELER = [...];
+  // ---- KELIMELER ----
   if (typeof KELIMELER !== 'undefined' && Array.isArray(KELIMELER) && KELIMELER.length > 0) {
     const sample = KELIMELER[0];
-    db.dictionary = sample.w
-      ? KELIMELER
-      : KELIMELER.map(normalizeWord).filter(w => w.w);
+    db.dictionary = sample.w ? KELIMELER : KELIMELER.map(normalizeWord).filter(w => w.w);
+    // Cache'e kaydet → sayfa yenilemesinde kullanılabilsin
+    try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(db.dictionary)); } catch(e) {}
     console.log(`✅ kelimeler.js: ${db.dictionary.length} kelime`);
+  } else {
+    // JS dosyası yüklenemedi → cache'den al
+    try {
+      const cached = JSON.parse(localStorage.getItem(DICT_CACHE_KEY) || 'null');
+      if (cached && cached.length > 0) {
+        db.dictionary = cached;
+        console.log(`✅ kelimeler cache: ${db.dictionary.length} kelime`);
+      }
+    } catch(e) {}
   }
-  // reading.js → const READINGS = [...];
+
+  // ---- READINGS ----
   if (typeof READINGS !== 'undefined' && Array.isArray(READINGS) && READINGS.length > 0) {
     const sample = READINGS[0];
     db.readings = (sample.en && sample.qs)
       ? READINGS
       : READINGS.map(normalizeReading).filter(r => r.title);
+    // Cache'e kaydet
+    try { localStorage.setItem(READ_CACHE_KEY, JSON.stringify(db.readings)); } catch(e) {}
     console.log(`✅ reading.js: ${db.readings.length} metin`);
+  } else {
+    // JS dosyası yüklenemedi → cache'den al
+    try {
+      const cached = JSON.parse(localStorage.getItem(READ_CACHE_KEY) || 'null');
+      if (cached && cached.length > 0) {
+        db.readings = cached;
+        console.log(`✅ readings cache: ${db.readings.length} metin`);
+      }
+    } catch(e) {}
   }
 })();
 buildLevelGrid();
@@ -3902,10 +3930,29 @@ updateToggleUI();
 const AUTH_USERS_KEY   = 'lv_auth_users';
 const AUTH_SESSION_KEY = 'lv_auth_session';
 
-function getAuthUsers()   { try { return JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '[]'); } catch(e) { return []; } }
-function getAuthSession() { return localStorage.getItem(AUTH_SESSION_KEY); }
-function getCurrentUser() { const uid = getAuthSession(); return getAuthUsers().find(u => u.id === uid) || null; }
-function isAdminUser()    { const u = getCurrentUser(); return !!(u && u.isAdmin); }
+function getAuthUsers()      { try { return JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '[]'); } catch(e) { return []; } }
+function getAuthSession()    { return localStorage.getItem(AUTH_SESSION_KEY); }
+function getCurrentUser()    { const uid = getAuthSession(); return getAuthUsers().find(u => u.id === uid) || null; }
+function isAdminUser()       { const u = getCurrentUser(); return !!(u && u.isSuperAdmin); }
+function isSuperAdminUser()  { const u = getCurrentUser(); return !!(u && u.isSuperAdmin); }
+
+/* ---- SUPER ADMIN SEED ---- */
+const SUPER_ADMIN_ID = 'sadmin-mehkutlu';
+async function seedSuperAdmin() {
+  const users = getAuthUsers();
+  if (users.find(u => u.id === SUPER_ADMIN_ID)) return; // zaten var
+  users.unshift({
+    id: SUPER_ADMIN_ID,
+    username: 'admin241',
+    email: 'mehkutlu@gmail.com',
+    name: 'Mehmet Kutlu',
+    pw: 'f6a40d6166cef5dfe9af805241c622af9ee8c90a71a0375826c884559c89f415', // SHA-256(Mkutlu87654321)
+    isAdmin: true,
+    isSuperAdmin: true,
+    createdAt: '2024-01-01T00:00:00.000Z'
+  });
+  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+}
 
 function checkAuth() {
   if (!getAuthSession()) {
@@ -3925,11 +3972,11 @@ function applyAuthToUI() {
   const emailEl = document.getElementById('profileEmailDisplay');
   if (emailEl) emailEl.textContent = user.email;
   const badge = document.getElementById('profileAdminBadge');
-  if (badge) badge.style.display = user.isAdmin ? 'inline-block' : 'none';
+  if (badge) badge.style.display = user.isSuperAdmin ? 'inline-block' : 'none';
   const ids = ['adminContentSection','adminDevSection','adminPanelBtn','profileDataMgmtBtn'];
   ids.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = user.isAdmin ? '' : 'none';
+    if (el) el.style.display = user.isSuperAdmin ? '' : 'none';
   });
 }
 
@@ -3960,18 +4007,20 @@ async function hashPw(pw) {
 }
 
 async function authLogin() {
-  const email = (document.getElementById('authLoginEmail').value || '').trim().toLowerCase();
-  const pw    = document.getElementById('authLoginPw').value;
-  if (!email || !pw) { authShowErr('authErrLogin', 'E-posta ve şifreyi girin.'); return; }
+  const emailOrUser = (document.getElementById('authLoginEmail').value || '').trim().toLowerCase();
+  const pw          = document.getElementById('authLoginPw').value;
+  if (!emailOrUser || !pw) { authShowErr('authErrLogin', 'E-posta/kullanıcı adı ve şifreyi girin.'); return; }
 
   const hashed = await hashPw(pw);
   let users = getAuthUsers();
-  let user  = users.find(u => u.email === email && u.pw === hashed);
+  // E-posta veya kullanıcı adıyla eşleştir
+  const matchUser = u => u.email === emailOrUser || (u.username && u.username.toLowerCase() === emailOrUser);
+  let user = users.find(u => matchUser(u) && u.pw === hashed);
 
   // Backward-compat: migrate old btoa-encoded passwords on first login
   if (!user) {
     try {
-      const legacy = users.find(u => u.email === email && atob(u.pw) === pw);
+      const legacy = users.find(u => matchUser(u) && atob(u.pw) === pw);
       if (legacy) {
         const idx = users.findIndex(u => u.id === legacy.id);
         users[idx].pw = hashed; // upgrade to SHA-256
@@ -3981,7 +4030,7 @@ async function authLogin() {
     } catch (_) { /* atob may throw on non-base64 pw — safe to ignore */ }
   }
 
-  if (!user) { authShowErr('authErrLogin', 'E-posta veya şifre hatalı.'); return; }
+  if (!user) { authShowErr('authErrLogin', 'E-posta/kullanıcı adı veya şifre hatalı.'); return; }
   localStorage.setItem(AUTH_SESSION_KEY, user.id);
   document.getElementById('authScreen').style.display = 'none';
   if (!db.profile.name) { db.profile.name = user.name; save(); }
@@ -4003,7 +4052,7 @@ async function authRegister() {
   const newUser = {
     id: 'u_' + Date.now(), name, email,
     pw: await hashPw(pw),        // SHA-256 hash, not plaintext
-    isAdmin: users.length === 0,
+    isAdmin: false,              // Normal kullanıcılar admin olamaz; sadece super admin hardcoded
     createdAt: new Date().toISOString()
   };
   users.push(newUser);
@@ -4029,7 +4078,8 @@ function checkOnboarding() {
     document.getElementById('tabBar').style.display = 'none';
   }
 }
-checkAuth(); // Auth kontrolü → giriş yoksa auth ekranı, varsa onboarding kontrolü
+// Super admin seed → ardından auth kontrolü
+seedSuperAdmin().then(() => checkAuth());
 
 let obSelectedLevel = db.lvl;
 let obSelectedGoal  = db.profile.goal || 10;
@@ -4706,61 +4756,62 @@ function adminCancelEdit() {
 }
 
 // ---- KULLANICI YÖNETİMİ ----
-// Bu uygulama single-user localStorage modeli; "kullanıcılar" = tüm kaydedilmiş profiller
-// Gelecekte Firebase eklenirse burası genişletilebilir
 function renderAdminUsers() {
   const list = document.getElementById('adminUserList');
-
-  // Mevcut uygulamada tek kullanıcı var (localStorage)
-  // Birden fazla cihaz simüle etmek için adminUsers listesi tutuyoruz
-  let adminUsers = [];
-  try { adminUsers = JSON.parse(localStorage.getItem('lv_admin_users') || '[]'); } catch(e) {}
-
-  // Aktif kullanıcıyı da listeye ekle
-  const activeUser = {
-    id: 'local_main',
-    name: db.profile?.name || 'Ana Kullanıcı',
-    avatar: db.profile?.avatar || '😊',
-    level: db.lvl,
-    words: db.unknown.length,
-    readings: Object.keys(db.stats.completed || {}).length,
-    streak: streakCount(),
-    goal: db.profile?.goal || 10,
-    accuracy: db.stats.total > 0 ? Math.round((db.stats.correct/db.stats.total)*100) : 0,
-    lastSeen: new Date().toLocaleDateString('tr-TR'),
-    isActive: true,
-  };
-
-  const allUsers = [activeUser, ...adminUsers.filter(u => u.id !== 'local_main')];
+  const allUsers = getAuthUsers();
+  const currentSession = getAuthSession();
 
   if (allUsers.length === 0) {
     list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);">Henüz kayıtlı kullanıcı yok.</div>';
     return;
   }
 
-  list.innerHTML = allUsers.map(u => `
+  list.innerHTML = allUsers.map(u => {
+    const isActive   = u.id === currentSession;
+    const isSuper    = !!u.isSuperAdmin;
+    const badgeSuper = isSuper ? '<span style="background:#fef3c7;color:#d97706;font-size:.6rem;padding:2px 7px;border-radius:20px;margin-left:4px;font-weight:700;">⭐ Süper Admin</span>' : '';
+    const badgeAdmin = (!isSuper && u.isAdmin) ? '<span style="background:#ede9fe;color:#7c3aed;font-size:.6rem;padding:2px 7px;border-radius:20px;margin-left:4px;font-weight:700;">Admin</span>' : '';
+    const badgeAktif = isActive ? '<span style="background:#dcfce7;color:#16a34a;font-size:.6rem;padding:2px 7px;border-radius:20px;margin-left:4px;font-weight:700;">● Aktif</span>' : '';
+    const avatarChar = (u.name || '?')[0].toUpperCase();
+    const regDate    = u.createdAt ? new Date(u.createdAt).toLocaleDateString('tr-TR') : '—';
+    return `
     <div class="admin-user-card">
       <div class="admin-user-header">
-        <div class="admin-user-avatar">${u.avatar}</div>
+        <div class="admin-user-avatar" style="background:var(--lvl-main);color:#fff;font-weight:700;font-size:1.1rem;">${avatarChar}</div>
         <div class="admin-user-meta">
-          <div class="admin-user-name">${u.name} ${u.isActive ? '<span style="background:#dcfce7;color:#16a34a;font-size:.65rem;padding:2px 7px;border-radius:20px;margin-left:4px;">Aktif</span>' : ''}</div>
-          <div class="admin-user-lvl">${u.level} · Son görülme: ${u.lastSeen}</div>
+          <div class="admin-user-name">${u.name}${badgeSuper}${badgeAdmin}${badgeAktif}</div>
+          <div class="admin-user-lvl">${u.email}${u.username ? ' · @' + u.username : ''} · Kayıt: ${regDate}</div>
         </div>
       </div>
-      <div class="admin-user-stats">
-        <div class="admin-stat-chip">🧠 ${u.words} kelime</div>
-        <div class="admin-stat-chip">📖 ${u.readings} okuma</div>
-        <div class="admin-stat-chip">🔥 ${u.streak} gün</div>
-        <div class="admin-stat-chip">🎯 %${u.accuracy} başarı</div>
-        <div class="admin-stat-chip">⚡ Hedef: ${u.goal}/gün</div>
+      <div class="admin-user-actions" style="margin-top:10px;">
+        ${!isSuper ? `<button class="admin-btn-reset" onclick="adminDeleteUser('${u.id}')">🗑 Sil</button>` : ''}
+        ${(!isSuper && !u.isAdmin) ? `<button class="admin-btn-view" onclick="adminToggleAdmin('${u.id}', true)">👑 Admin Yap</button>` : ''}
+        ${(!isSuper && u.isAdmin) ? `<button class="admin-btn-view" onclick="adminToggleAdmin('${u.id}', false)" style="background:#fff3cd;color:#856404;">Admin Kaldır</button>` : ''}
       </div>
-      <div class="admin-user-actions">
-        <button class="admin-btn-view" onclick="adminViewUser('${u.id}')">👁 Detay</button>
-        ${u.isActive ? '' : `<button class="admin-btn-reset" onclick="adminRemoveUser('${u.id}')">🗑 Sil</button>`}
-        ${u.isActive ? `<button style="flex:1;height:34px;background:#eff6ff;color:#3b82f6;border:none;border-radius:9px;cursor:pointer;font-weight:600;font-size:.78rem;" onclick="adminResetUserProgress('${u.id}')">🔄 İlerlemeyi Sıfırla</button>` : ''}
-      </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+function adminDeleteUser(id) {
+  const users = getAuthUsers();
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  if (u.isSuperAdmin) { notify('⛔ Süper admin silinemez.'); return; }
+  if (!confirm(`"${u.name}" kullanıcısı silinsin mi?`)) return;
+  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users.filter(x => x.id !== id)));
+  renderAdminUsers();
+  notify('✅ Kullanıcı silindi.');
+}
+
+function adminToggleAdmin(id, makeAdmin) {
+  const users = getAuthUsers();
+  const idx = users.findIndex(u => u.id === id);
+  if (idx === -1) return;
+  if (users[idx].isSuperAdmin) { notify('⛔ Süper admin değiştirilemez.'); return; }
+  users[idx].isAdmin = makeAdmin;
+  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+  renderAdminUsers();
+  notify(makeAdmin ? '👑 Admin yetkisi verildi.' : '⬇ Admin yetkisi kaldırıldı.');
 }
 
 function adminViewUser(id) {
@@ -4867,7 +4918,8 @@ function normalizeWord(raw) {
   // Zaten iç formatta mı?
   if (raw.w) return raw;
   // Gerçek JSON formatı (Türkçe alan adları)
-  return {
+  const cefrRaw = raw['Kelimenin Seviyesi'] || raw.level || raw.cefr || '';
+  const entry = {
     w:   (raw['İngilizceKelime'] || raw.word || '').toLowerCase().trim(),
     tr:  raw['TürkçeAnlam']  || raw.turkish || raw.tr || '?',
     te:  raw['İngilizceTür'] || raw.typeEn  || raw.te || '',
@@ -4879,6 +4931,8 @@ function normalizeWord(raw) {
     e2:  raw['ÖrnekCümle2_İngilizce'] || raw.ex2En || raw.e2 || '',
     e2t: raw['ÖrnekCümle2_Türkçe']    || raw.ex2Tr || raw.e2t || '',
   };
+  if (cefrRaw) entry.cefr = cefrRaw.toUpperCase().trim();
+  return entry;
 }
 
 function normalizeReading(raw) {
@@ -4966,11 +5020,13 @@ function adminHandleFile(input, type) {
           const arr = parseJsonWords(text);
           db.dictionary = arr;
           save();
+          try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(arr)); } catch(e) {}
           notify(`✅ ${arr.length} kelime yüklendi`);
         } else {
           const arr = parseJsonReadings(text);
           db.readings = arr;
           save();
+          try { localStorage.setItem(READ_CACHE_KEY, JSON.stringify(arr)); } catch(e) {}
           notify(`✅ ${arr.length} okuma metni yüklendi`);
         }
       } else {
@@ -4990,8 +5046,8 @@ function adminHandleFile(input, type) {
 function adminClearData(type) {
   const label = type === 'word' ? 'sözlük verisi' : 'okuma metinleri';
   if (!confirm(`Tüm ${label} silinecek. Emin misiniz?`)) return;
-  if (type === 'word') { db.dictionary = []; }
-  else { db.readings = []; }
+  if (type === 'word') { db.dictionary = []; localStorage.removeItem(DICT_CACHE_KEY); }
+  else { db.readings = []; localStorage.removeItem(READ_CACHE_KEY); }
   save();
   notify(`✅ ${label} temizlendi`);
   renderAdminDataInfo();
