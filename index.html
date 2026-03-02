@@ -1725,10 +1725,18 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
     <div id="ptQuestion" style="font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:18px;min-height:50px;text-align:center;"></div>
     <div id="ptOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:16px;"></div>
     <div id="ptResult" style="display:none;text-align:center;padding:20px;">
-      <div style="font-size:3rem;margin-bottom:12px;" id="ptResultEmoji">🎯</div>
-      <div style="font-size:1.2rem;font-weight:700;margin-bottom:8px;" id="ptResultLevel"></div>
-      <div style="font-size:.9rem;color:var(--muted);" id="ptResultSub"></div>
-      <button onclick="obNext(4)" style="margin-top:20px;padding:14px 32px;background:linear-gradient(135deg,var(--lvl-main),var(--lvl-dark));color:white;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;">Devam Et →</button>
+      <div style="font-size:3.5rem;margin-bottom:16px;" id="ptResultEmoji">🎯</div>
+      <div style="font-size:1.4rem;font-weight:700;margin-bottom:6px;color:var(--text);" id="ptResultLevel"></div>
+      <div style="font-size:2rem;font-weight:700;margin-bottom:12px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));padding:16px;border-radius:12px;color:white;font-family:'Playfair Display',serif;" id="ptResultPercentage">0%</div>
+      <div style="font-size:.95rem;color:var(--muted);margin-bottom:16px;" id="ptResultScore">0/0 doğru</div>
+
+      <div style="margin-bottom:16px;text-align:left;">
+        <div style="font-size:.85rem;font-weight:600;margin-bottom:8px;color:var(--text);">📚 Bu seviyedeki örnek kelimeler:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="ptSampleWords"></div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;height:48px;margin-bottom:8px;" onclick="show('home')">🎓 Öğrenmeye Başla</button>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:12px;">Seviyeniz otomatik olarak ayarlandı. Dilersen değiştirebilirsin.</div>
     </div>
   </div>
   <!-- Step 4: Daily goal -->
@@ -1963,6 +1971,22 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
       <div class="toggle-switch" id="toggleNotif" aria-hidden="true"></div>
     </div>
     <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px;padding:0 4px;">Cihaz bildirim izninizi tarayıcı ayarlarından etkinleştirmeniz gerekebilir.</div>
+
+    <!-- Reminder Time Picker -->
+    <div id="reminderTimeSection" style="display:none;margin-bottom:16px;padding:12px;background:var(--surface);border-radius:12px;">
+      <div style="font-size:.85rem;font-weight:600;margin-bottom:8px;color:var(--text);">Hatırlatma Saati</div>
+      <select id="reminderTimeSelect" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-family:inherit;font-size:1rem;" onchange="updateReminderTime(this.value)">
+        <option value="08:00">08:00</option>
+        <option value="10:00">10:00</option>
+        <option value="12:00">12:00</option>
+        <option value="14:00">14:00</option>
+        <option value="16:00">16:00</option>
+        <option value="18:00">18:00</option>
+        <option value="20:00">20:00</option>
+        <option value="22:00">22:00</option>
+      </select>
+    </div>
+
     <div class="settings-item" role="button" tabindex="0" aria-pressed="false" aria-label="Ses Efektleri" onclick="toggleSetting('sound')" onkeydown="if(event.key==='Enter'||event.key===' '){toggleSetting('sound');event.preventDefault();}">
       <span class="si-icon" aria-hidden="true">🔊</span>
       <span class="si-label">Ses Efektleri</span>
@@ -2646,11 +2670,12 @@ let db = {
   weekActivity: {},
   stats: { completed: {}, correct: 0, total: 0, learnedWords: 0, listenCount: 0 },
   profile: { name: '', avatar: '😊', goal: 10 },
-  settings: { darkMode: false, notifications: false, sound: true },
+  settings: { darkMode: false, notifications: false, sound: true, remindersEnabled: false, reminderTime: '08:00', soundsEnabled: true },
   onboardingDone: false,
   todayWords: 0,
   todayDate: '',
   badges: [],
+  srsLastReview: 0,  // timestamp of last SRS review
 };
 
 // ---- LEVEL CONFIG ----
@@ -2745,6 +2770,7 @@ const save = () => {
     unlockedLevels: db.unlockedLevels || [],
     todayRead:      db.todayRead || 0,
     todayListen:    db.todayListen || 0,
+    srsLastReview:  db.srsLastReview || 0,  // SRS timestamp
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -2768,11 +2794,207 @@ const load = () => {
       delete parsed.dictionary;
       delete parsed.readings;
       db = { ...db, ...parsed };
+
+      // Backfill SRS fields for legacy words (if they don't have SRS data)
+      if (db.unknown && Array.isArray(db.unknown)) {
+        db.unknown.forEach(word => {
+          if (!word.hasOwnProperty('interval')) word.interval = 0;
+          if (!word.hasOwnProperty('repetitions')) word.repetitions = 0;
+          if (!word.hasOwnProperty('easeFactor')) word.easeFactor = 2.5;
+          if (!word.hasOwnProperty('nextReview')) word.nextReview = 0;
+        });
+      }
     }
   } catch(e) {
     console.warn('localStorage okuma hatası:', e);
   }
 };
+
+// ---- WEEKLY STATS ----
+function calculateWeeklyStats() {
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Get daily activity data
+  const dailyData = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    const dateStr = date.toISOString().split('T')[0];
+    const activity = db.weekActivity[dateStr] || { cardsReviewed: 0, newWordsLearned: 0 };
+    dailyData.push({
+      date: dateStr,
+      day: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][date.getDay()],
+      ...activity
+    });
+  }
+
+  const totalsThisWeek = {
+    cardsReviewed: dailyData.reduce((sum, d) => sum + (d.cardsReviewed || 0), 0),
+    newWordsLearned: dailyData.reduce((sum, d) => sum + (d.newWordsLearned || 0), 0),
+    averagePerDay: Math.round(dailyData.reduce((sum, d) => sum + (d.cardsReviewed || 0), 0) / 7),
+    dailyData
+  };
+
+  return totalsThisWeek;
+}
+
+function showWeeklyDigest() {
+  const stats = calculateWeeklyStats();
+  const currentStreak = streakCount();
+  const lvlCfg = getLvlConfig(db.lvl);
+
+  const modal = document.getElementById('weeklyDigestModal') || createWeeklyDigestModal();
+
+  // Update content
+  document.getElementById('wdStreakCount').textContent = currentStreak;
+  document.getElementById('wdWordsThisWeek').textContent = stats.newWordsLearned;
+  document.getElementById('wdCardsReviewed').textContent = stats.cardsReviewed;
+  document.getElementById('wdAverageDay').textContent = stats.averagePerDay;
+  document.getElementById('wdCurrentLevel').textContent = `${lvlCfg.icon} ${lvlCfg.id} (${lvlCfg.cefr})`;
+
+  // Update daily bars
+  const barsContainer = document.getElementById('wdDailyBars');
+  barsContainer.innerHTML = stats.dailyData.map(d => {
+    const maxVal = Math.max(...stats.dailyData.map(x => x.cardsReviewed || 0), 1);
+    const height = maxVal > 0 ? (d.cardsReviewed / maxVal) * 100 : 0;
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:32px;height:${Math.max(height * 1.5, 20)}px;background:linear-gradient(to top,var(--lvl-main),var(--accent));border-radius:4px 4px 0 0;"></div>
+        <div style="font-size:.7rem;font-weight:600;color:var(--muted);">${d.day}</div>
+        <div style="font-size:.75rem;color:var(--text);">${d.cardsReviewed}</div>
+      </div>
+    `;
+  }).join('');
+
+  openModal('weeklyDigestModal');
+}
+
+function createWeeklyDigestModal() {
+  const html = `
+    <div class="modal-overlay" id="weeklyDigestModal" role="dialog" aria-modal="true" onclick="closeModal('weeklyDigestModal')">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div class="modal-title">📊 Haftalık İstatistikler</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="background:var(--surface);padding:12px;border-radius:10px;text-align:center;">
+            <div style="font-size:.8rem;color:var(--muted);margin-bottom:4px;">🔥 Günlük Seri</div>
+            <div style="font-size:1.8rem;font-weight:700;color:var(--lvl-main);" id="wdStreakCount">0</div>
+          </div>
+          <div style="background:var(--surface);padding:12px;border-radius:10px;text-align:center;">
+            <div style="font-size:.8rem;color:var(--muted);margin-bottom:4px;">📚 Bu Hafta</div>
+            <div style="font-size:1.8rem;font-weight:700;color:var(--accent);" id="wdWordsThisWeek">0</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);padding:12px;border-radius:10px;margin-bottom:16px;">
+          <div style="font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:12px;">📅 Günlük Aktivite</div>
+          <div style="display:flex;justify-content:space-around;align-items:flex-end;gap:4px;height:120px;" id="wdDailyBars"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div style="background:var(--surface);padding:12px;border-radius:10px;text-align:center;">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px;">🧠 Kart İncelemesi</div>
+            <div style="font-size:1.5rem;font-weight:700;" id="wdCardsReviewed">0</div>
+          </div>
+          <div style="background:var(--surface);padding:12px;border-radius:10px;text-align:center;">
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px;">📈 Günlük Ortalama</div>
+            <div style="font-size:1.5rem;font-weight:700;" id="wdAverageDay">0</div>
+          </div>
+        </div>
+
+        <div style="background:linear-gradient(135deg,var(--lvl-main),var(--lvl-dark));color:white;padding:12px;border-radius:10px;margin-bottom:16px;text-align:center;">
+          <div style="font-size:.8rem;margin-bottom:4px;">🎓 Mevcut Seviye</div>
+          <div style="font-size:1.2rem;font-weight:700;" id="wdCurrentLevel">Level</div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;height:48px;" onclick="closeModal('weeklyDigestModal')">Tamam</button>
+      </div>
+    </div>
+  `;
+  const container = document.body;
+  const modal = document.createElement('div');
+  modal.innerHTML = html;
+  container.appendChild(modal.firstElementChild);
+  return document.getElementById('weeklyDigestModal');
+}
+
+// ---- SRS (SPACED REPETITION SYSTEM) ----
+/**
+ * SM-2 Algorithm Implementation
+ * Quality scale: 0-5 (0 = complete failure, 5 = perfect recall)
+ */
+function calculateNextInterval(quality, interval, repetitions, easeFactor) {
+  if (quality < 3) {
+    // Forget - reset to beginning
+    return { interval: 0, repetitions: 0, easeFactor: Math.max(1.3, easeFactor - 0.2) };
+  }
+
+  // Update ease factor based on performance
+  let newEaseFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  newEaseFactor = Math.max(1.3, newEaseFactor);
+
+  let newInterval, newRepetitions;
+
+  if (repetitions === 0) {
+    newInterval = 1; // First interval: 1 day
+    newRepetitions = 1;
+  } else if (repetitions === 1) {
+    newInterval = 3; // Second interval: 3 days
+    newRepetitions = 2;
+  } else {
+    newInterval = Math.round(interval * newEaseFactor); // Subsequent: multiply by ease factor
+    newRepetitions = repetitions + 1;
+  }
+
+  return { interval: newInterval, repetitions: newRepetitions, easeFactor: newEaseFactor };
+}
+
+function scoreCard(wordId, quality) {
+  // quality: 0-5 (0=forget, 3+=pass, 5=perfect)
+  const wordIdx = db.unknown.findIndex(w => w.w === wordId);
+  if (wordIdx === -1) return;
+
+  const word = db.unknown[wordIdx];
+  const srs = calculateNextInterval(quality, word.interval, word.repetitions, word.easeFactor);
+
+  // Update word with new SRS data
+  word.interval = srs.interval;
+  word.repetitions = srs.repetitions;
+  word.easeFactor = srs.easeFactor;
+  word.nextReview = Date.now() + (srs.interval * 24 * 60 * 60 * 1000); // milliseconds
+  word.lastReviewDate = Date.now();
+
+  // Track stats
+  if (quality >= 3) {
+    db.stats.correct = (db.stats.correct || 0) + 1;
+  }
+  db.stats.total = (db.stats.total || 0) + 1;
+  db.srsLastReview = Date.now();
+
+  save();
+  return srs;
+}
+
+function getSRSStats() {
+  // Returns count of words due for review
+  const now = Date.now();
+  return {
+    dueToday: db.unknown.filter(w => (w.nextReview || 0) <= now).length,
+    total: db.unknown.length,
+    learning: db.unknown.filter(w => (w.repetitions || 0) <= 2).length,
+  };
+}
+
+function sortCardsByPriority() {
+  // Sort by priority: due first, then by nextReview time
+  const now = Date.now();
+  return db.unknown.sort((a, b) => {
+    const aNextReview = a.nextReview || 0;
+    const bNextReview = b.nextReview || 0;
+    return aNextReview - bNextReview;
+  });
+}
 
 // ---- TOAST ----
 function notify(msg) {
@@ -2929,6 +3151,7 @@ function show(id) {
     updateLoadStatus();
     if (typeof renderAdminDataInfo === 'function') renderAdminDataInfo();
   }
+  if (id === 'cardScreen') { initializeCardSwipe(); }
 
   // V15: Tab bar visibility — hide during immersive screens
   const noTab = ['cardScreen', 'quizScreen', 'resultScreen', 'readMod'];
@@ -2989,6 +3212,33 @@ function getTopicEmoji(title) {
   return '📚';
 }
 
+// ---- READING CARD IMAGE FALLBACK ----
+function tryNextReadingImg(img) {
+  const title = img.getAttribute('data-title') || '';
+  const attempt = parseInt(img.getAttribute('data-attempt') || '0') + 1;
+  // Build fallback variant list (skip exact title — already tried as attempt 0)
+  const raw = [
+    title.replace(/^My\s+/i, ''),                                  // "My Daily Routine" → "Daily Routine"
+    title.replace(/^(My|A|An|The)\s+\w+\s+/i, ''),                // "My Lovely Family" → "Family"
+    title.split(' ').slice(-2).join(' '),                          // last 2 words
+    title.split(' ').slice(-1)[0]                                  // last word
+  ];
+  // Deduplicate and remove empty / same-as-title entries
+  const variants = raw.filter((v, i, arr) => v && v !== title && arr.indexOf(v) === i);
+  const idx = attempt - 1; // attempt 1 → variants[0], etc.
+  if (idx < variants.length) {
+    img.setAttribute('data-attempt', attempt);
+    img.src = 'images/' + encodeURIComponent(variants[idx]) + '.png';
+  } else {
+    // All variants exhausted — show emoji fallback, hide broken img
+    img.style.display = 'none';
+    const fallback = img.nextElementSibling;
+    if (fallback && fallback.classList.contains('read-card-illustration')) {
+      fallback.style.display = 'flex';
+    }
+  }
+}
+
 // ---- READING LIST ----
 function renderReadList() {
   const L = db.lang;
@@ -3024,7 +3274,13 @@ function renderReadList() {
         <span class="read-card-lvl-badge">${lvlCfg.icon} ${lvlCfg.id} <span class="cefr-text">${lvlCfg.cefr}</span></span>
       </div>
       <div class="read-card-img-wrap">
-        <div class="read-card-illustration">
+        <img class="read-card-img"
+             src="images/${encodeURIComponent(r.title)}.png"
+             data-title="${r.title}"
+             data-attempt="0"
+             alt="${r.title}"
+             onerror="tryNextReadingImg(this)">
+        <div class="read-card-illustration" style="display:none;">
           <span class="rc-illus-emoji">${getTopicEmoji(r.title)}</span>
           <span class="rc-illus-label">${r.title}</span>
         </div>
@@ -3112,7 +3368,13 @@ function renderReadingContent() {
         if (!clean) return;
         const existing = db.unknown.findIndex(u => u.w === clean);
         if (existing === -1) {
-          db.unknown.push(dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' });
+          const newWord = dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' };
+          // Initialize SRS fields for new word
+          newWord.interval = 0;
+          newWord.repetitions = 0;
+          newWord.easeFactor = 2.5;
+          newWord.nextReview = 0;
+          db.unknown.push(newWord);
           span.classList.add('is-unknown');
           save();
           const meaning = dictMatch ? ` (${dictMatch.tr})` : '';
@@ -3506,26 +3768,41 @@ function toggleCardLang() {
 }
 
 function cardAction(type) {
+  // Track activity for weekly stats
+  const today = new Date().toISOString().split('T')[0];
+  if (!db.weekActivity[today]) {
+    db.weekActivity[today] = { cardsReviewed: 0, newWordsLearned: 0 };
+  }
+  db.weekActivity[today].cardsReviewed = (db.weekActivity[today].cardsReviewed || 0) + 1;
+
   if (cardSource === 'unknown') {
-    // Kelime kasası: "Biliyorum" kaldırır, "Tekrar" devam eder
+    // Kelime kasası: SRS scoring (V17: Spaced Repetition)
     if (type === 'know') {
+      // Perfect recall - quality 5
+      const currentWord = cardList[cardIdx];
+      scoreCard(currentWord.w, 5);
+
       // V15: Günlük hedef takibi
       db.todayWords = (db.todayWords || 0) + 1;
       db.stats.learnedWords = (db.stats.learnedWords || 0) + 1;
+      db.weekActivity[today].newWordsLearned = (db.weekActivity[today].newWordsLearned || 0) + 1;
       save();
       updateDailyGoalWidget();
       const goal = db.profile?.goal || 10;
       if (db.todayWords === goal) {
         setTimeout(() => { launchConfetti(); notify('🎉 Günlük kelime hedefe ulaştın!'); }, 400);
       }
-      db.unknown.splice(cardIdx, 1);
-      cardList = db.unknown;
-      save();
     } else {
-      cardIdx = (cardIdx + 1) % cardList.length;
+      // Failed recall - quality 0 (will reset interval)
+      const currentWord = cardList[cardIdx];
+      scoreCard(currentWord.w, 0);
     }
+
+    // Resort cards by SRS priority
+    cardList = sortCardsByPriority();
+    cardIdx = 0; // Start from highest priority (due soonest)
+
     if (cardList.length > 0) {
-      if (cardIdx >= cardList.length) cardIdx = 0;
       renderCard();
     } else {
       show('home');
@@ -3552,6 +3829,51 @@ function cardAction(type) {
       renderCard();
     }
   }
+}
+
+// ---- SWIPE GESTURE HANDLER ----
+let swipeStartX = 0, swipeStartY = 0;
+
+function initializeCardSwipe() {
+  const container = document.getElementById('cardContainer');
+  if (!container) return;
+
+  container.addEventListener('touchstart', (e) => {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+  }, false);
+
+  container.addEventListener('touchend', (e) => {
+    if (!cardList || cardList.length === 0) return;
+
+    const swipeEndX = e.changedTouches[0].clientX;
+    const swipeEndY = e.changedTouches[0].clientY;
+    const diffX = swipeStartX - swipeEndX; // Positive = swipe left
+    const diffY = swipeStartY - swipeEndY;
+
+    // Minimum swipe distance: 50px
+    const minSwipeDistance = 50;
+    // Must be more horizontal than vertical
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
+      if (diffX > 0) {
+        // Swipe left = "Again" (quality 0)
+        const card = document.querySelector('.card-box');
+        if (card) {
+          card.style.transform = 'translateX(-100px) rotateZ(-5deg)';
+          card.style.opacity = '0.3';
+        }
+        setTimeout(() => cardAction('again'), 150);
+      } else {
+        // Swipe right = "I Know" (quality 5)
+        const card = document.querySelector('.card-box');
+        if (card) {
+          card.style.transform = 'translateX(100px) rotateZ(5deg)';
+          card.style.opacity = '0.3';
+        }
+        setTimeout(() => cardAction('know'), 150);
+      }
+    }
+  }, false);
 }
 
 // ---- QUIZ ----
@@ -3597,7 +3919,13 @@ function renderQuestion() {
       if (!clean) return;
       const idx = db.unknown.findIndex(u => u.w === clean);
       if (idx === -1) {
-        db.unknown.push(dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' });
+        const newWord = dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' };
+        // Initialize SRS fields for new word
+        newWord.interval = 0;
+        newWord.repetitions = 0;
+        newWord.easeFactor = 2.5;
+        newWord.nextReview = 0;
+        db.unknown.push(newWord);
         span.classList.add('is-unknown');
         save();
         const meaning = dictMatch ? ` (${dictMatch.tr})` : '';
@@ -4065,6 +4393,9 @@ load();
 
 // ---- VERİ BAŞLATMA (kelimeler.js + reading.js + sinavlar.js + localStorage cache) ----
 // Öncelik: 1) JS dosyası (herhangi bir değişken adı)  2) localStorage cache  3) boş
+// Placement/gate değişkenleri burada tanımlanmalı — injectBuiltinData IIFE'den önce (TDZ önleme)
+var PLACEMENT_Qs  = [];
+var LEVEL_GATE_Qs = {};
 function injectBuiltinData() {
   // ---- KELIMELER (WORD_DATA veya KELIMELER) ----
   try {
@@ -4124,6 +4455,10 @@ applyLevel(db.lvl);
 applyLang();
 updateHero();
 buildWeekRow();
+updateToggleUI(); // Update notification UI toggles on load
+if (db.settings.notifications && db.settings.remindersEnabled) {
+  scheduleNotifications(); // Schedule daily reminders if enabled
+}
 
 // Ensure body has data-level from the start
 document.body.setAttribute('data-level', db.lvl);
@@ -4417,8 +4752,7 @@ function buildSinavQuestions(sinav) {
   });
 }
 
-// Placement test: "Seviye Belirleme Sınavı" adlı sınav
-let PLACEMENT_Qs = [];
+// Placement test: "Seviye Belirleme Sınavı" adlı sınav (değişken yukarıda tanımlandı)
 function loadPlacementFromGlobal() {
   if (typeof sinavlarVerisi === 'undefined') return;
   const found = sinavlarVerisi.find(s =>
@@ -4429,10 +4763,11 @@ function loadPlacementFromGlobal() {
 }
 loadPlacementFromGlobal();
 
-// Level gate: geçiş sınavları → seviye id'sine göre harita
-const LEVEL_GATE_Qs = {};
+// Level gate: geçiş sınavları → seviye id'sine göre harita (değişken yukarıda tanımlandı)
 function loadGateFromGlobal() {
   if (typeof sinavlarVerisi === 'undefined') return;
+  // LEVEL_GATE_Qs henüz atanmamışsa (eski cache vb.) güvenli init
+  if (typeof LEVEL_GATE_Qs === 'undefined' || LEVEL_GATE_Qs === null) { LEVEL_GATE_Qs = {}; }
   const mapping = [
     { key: 'Sapling',  patterns: ['a1', 'a2'] },
     { key: 'Tree',     patterns: ['a2', 'b1'] },
@@ -4505,6 +4840,7 @@ function renderPlacementQ() {
 function finishPlacementTest() {
   const total = PLACEMENT_Qs.length;
   const pct = ptCorrect / total;
+  const percentage = Math.round(pct * 100);
   let detectedId;
   // 20 soruluk sınav için eşik değerleri
   if      (pct >= 0.88) detectedId = 'Galaxy';
@@ -4519,12 +4855,23 @@ function finishPlacementTest() {
 
   document.getElementById('ptQuestion').style.display = 'none';
   document.getElementById('ptOptions').style.display = 'none';
+  document.getElementById('ptProgress').style.display = 'none';
   const res = document.getElementById('ptResult');
   res.style.display = 'block';
   const cfg = getLvlConfig(detectedId);
+
+  // Enhanced result display
   document.getElementById('ptResultEmoji').textContent = cfg.icon;
-  document.getElementById('ptResultLevel').textContent = `${cfg.id} — ${cfg.cefr} seviyendesiniz`;
-  document.getElementById('ptResultSub').textContent = `${ptCorrect}/${total} doğru cevap. Seviyeniz otomatik olarak ayarlandı.`;
+  document.getElementById('ptResultLevel').textContent = `${cfg.id} — ${cfg.cefr}`;
+  document.getElementById('ptResultPercentage').textContent = `${percentage}%`;
+  document.getElementById('ptResultScore').textContent = `${ptCorrect}/${total} doğru`;
+
+  // Get sample words from this level
+  const levelWords = db.dictionary.filter(w => w.cefr === cfg.cefr).slice(0, 5);
+  const sampleWordsHTML = levelWords.length > 0
+    ? levelWords.map(w => `<span style="display:inline-block;margin:4px;padding:6px 12px;background:var(--surface);border-radius:8px;font-size:.85rem;"><strong>${w.w}</strong></span>`).join('')
+    : '<span style="font-size:.9rem;color:var(--muted);">Örnek kelimeler hazırlaniyor...</span>';
+  document.getElementById('ptSampleWords').innerHTML = sampleWordsHTML;
 }
 
 const GATE_PASS_THRESHOLD = 0.75; // %75 geçme puanı
@@ -4847,6 +5194,9 @@ function toggleSetting(key) {
       return;
     }
     if (Notification.permission === 'granted') {
+      // Auto-enable reminders when notifications are enabled
+      db.settings.remindersEnabled = true;
+      scheduleNotifications();
       updateToggleUI(); save();
       notify('🔔 Bildirimler açık!');
       return;
@@ -4855,7 +5205,101 @@ function toggleSetting(key) {
     openModal('notifPermModal');
     db.settings.notifications = false; // reset until granted
   } else {
+    if (key === 'notifications' && !db.settings.notifications) {
+      db.settings.remindersEnabled = false;
+    }
     updateToggleUI(); save();
+  }
+}
+
+function updateReminderTime(time) {
+  db.settings.reminderTime = time;
+  db.settings.remindersEnabled = true;
+  save();
+  scheduleNotifications();
+  notify(`⏰ Hatırlatma saati ${time} olarak ayarlandı`);
+}
+
+function updateToggleUI() {
+  const notifToggle = document.getElementById('toggleNotif');
+  const soundToggle = document.getElementById('toggleSound');
+  const reminderSection = document.getElementById('reminderTimeSection');
+  const reminderSelect = document.getElementById('reminderTimeSelect');
+
+  if (notifToggle) notifToggle.className = db.settings.notifications ? 'toggle-switch active' : 'toggle-switch';
+  if (soundToggle) soundToggle.className = db.settings.sound ? 'toggle-switch active' : 'toggle-switch';
+
+  // Show/hide reminder time picker based on notification setting
+  if (reminderSection) {
+    reminderSection.style.display = db.settings.notifications ? 'block' : 'none';
+  }
+
+  // Set current reminder time
+  if (reminderSelect && db.settings.reminderTime) {
+    reminderSelect.value = db.settings.reminderTime;
+  }
+}
+
+// Schedule notifications based on user's preferred time
+function scheduleNotifications() {
+  if (!db.settings.notifications || !db.settings.remindersEnabled) return;
+
+  // Parse reminder time (e.g., "08:00")
+  const [hours, minutes] = (db.settings.reminderTime || '08:00').split(':').map(Number);
+
+  // Calculate next occurrence of that time
+  const now = new Date();
+  const nextReminder = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+
+  // If that time has passed today, schedule for tomorrow
+  if (nextReminder <= now) {
+    nextReminder.setDate(nextReminder.getDate() + 1);
+  }
+
+  const msUntilReminder = nextReminder.getTime() - now.getTime();
+
+  // Clear any existing timeout
+  if (window.notificationTimeout) {
+    clearTimeout(window.notificationTimeout);
+  }
+
+  // Schedule the notification
+  window.notificationTimeout = setTimeout(() => {
+    sendDailyReminder();
+    // Re-schedule for next day
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(hours, minutes, 0, 0);
+    const nextMs = tomorrow.getTime() - Date.now();
+    window.notificationTimeout = setTimeout(sendDailyReminder, nextMs);
+  }, msUntilReminder);
+
+  console.log('[Notifications] Next reminder in', Math.round(msUntilReminder / 60000), 'minutes');
+}
+
+function sendDailyReminder() {
+  if (!db.settings.notifications || !db.settings.remindersEnabled) return;
+  if (Notification.permission !== 'granted') return;
+
+  // Get SRS stats for notification
+  const stats = getSRSStats();
+  const dueCount = stats.dueToday;
+
+  const title = 'LinguiVance 📚';
+  const body = dueCount > 0
+    ? `${dueCount} kelime seni bekliyor! Bugün çalışmaya hazır mısın?`
+    : 'Yeni bir gün, yeni firsatlar! Bugün ne öğrenmek istersin?';
+
+  try {
+    new Notification(title, {
+      body: body,
+      icon: './icons/icon-192x192.png',
+      badge: './icons/icon-72x72.png',
+      tag: 'daily-reminder',
+      requireInteraction: false
+    });
+  } catch (e) {
+    console.warn('[Notifications] Failed to send:', e);
   }
 }
 
@@ -4864,17 +5308,17 @@ async function requestNotifPermission() {
   const perm = await Notification.requestPermission();
   if (!db.settings) db.settings = {};
   db.settings.notifications = (perm === 'granted');
+  if (perm === 'granted') {
+    db.settings.remindersEnabled = true;
+    scheduleNotifications();
+  }
   updateToggleUI(); save();
   if (perm === 'granted') {
     notify('🔔 Bildirimler etkinleştirildi!');
-    // Schedule a test notification
+    // Send test notification
     setTimeout(() => {
-      new Notification('LinguiVance 🌍', {
-        body: 'Harika! Günlük hatırlatmalar etkin.',
-        icon: './icons/icon-192x192.png',
-        badge: './icons/icon-72x72.png'
-      });
-    }, 1000);
+      sendDailyReminder();
+    }, 500);
   } else {
     notify('Bildirim izni verilmedi.');
   }
@@ -4912,6 +5356,12 @@ function changeLang() {
 function openModal(id) {
   const modal = document.getElementById(id);
   modal.classList.add('active');
+
+  // Update notification UI when settings modal opens
+  if (id === 'notifModal') {
+    updateToggleUI();
+  }
+
   // Trap focus in modal and set focus to first focusable element
   requestAnimationFrame(() => {
     const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');

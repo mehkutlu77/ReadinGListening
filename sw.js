@@ -3,7 +3,7 @@
    Offline-first caching strategy
    ============================================================ */
 
-const CACHE_NAME = 'linguivance-v10';
+const CACHE_NAME = 'linguivance-v11';
 const STATIC_CACHE = 'linguivance-static-v10';
 const DATA_CACHE = 'linguivance-data-v10';
 
