@@ -62,15 +62,21 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-1024x1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "screenshots": [
     {
-      "src": "screenshots/home.png",
-      "sizes": "390x844",
+      "src": "icons/icon-512x512.png",
+      "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "LinguiVance Home Screen"
+      "label": "LinguiVance"
     }
   ],
   "shortcuts": [
@@ -90,6 +96,7 @@
     }
   ],
   "prefer_related_applications": false,
+  "privacy_policy": "./PRIVACY_POLICY.md",
   "edge_side_panel": {
     "preferred_width": 400
   }
