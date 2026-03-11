@@ -244,46 +244,103 @@ body {
 #readMod.active { display: flex !important; }
 @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 
-/* ---- HEADER BAR ---- */
+/* ---- HERO TOP ROW (Logo + Lang inside hero-card) ---- */
+.hero-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+.hero-logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.hero-logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  object-fit: contain;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.hero-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.hero-brand {
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.hero-program {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -.2px;
+}
+.hero-lang-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.hero-lang-sub {
+  font-size: .62rem;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.hero-lang-toggle {
+  display: flex;
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 50px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+}
+.hero-lang-toggle span {
+  padding: 6px 14px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  transition: .2s;
+}
+.hero-lang-toggle span.active {
+  background: rgba(255,255,255,0.3);
+  color: white;
+  border-radius: 50px;
+}
+.hero-streak-area {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- TOP BAR (diğer ekranlarda kullanılır) ---- */
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  padding: 10px 0;
+  margin-bottom: 12px;
 }
-.top-bar .logo-area {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.top-bar .logo-img {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  object-fit: contain;
-  background: #000;
-  flex-shrink: 0;
-}
-.top-bar .logo-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-.top-bar .logo-main {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--lvl-dark);
-  letter-spacing: -.3px;
-}
-.top-bar .logo-sub {
-  font-size: .68rem;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-.top-bar-actions { display: flex; gap: 8px; align-items: center; }
+.top-bar .logo-area { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.top-bar .logo-img { width: 44px; height: 44px; border-radius: 11px; object-fit: contain; background: #000; flex-shrink: 0; }
+.top-bar .logo-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.top-bar .logo-main { font-size: .65rem; font-weight: 700; color: var(--muted); letter-spacing: 1.2px; text-transform: uppercase; }
+.top-bar .logo-sub { font-size: .95rem; font-weight: 800; color: var(--lvl-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-bar-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 
 /* ---- LANGUAGE TOGGLE ---- */
 .lang-toggle {
@@ -338,6 +395,7 @@ body {
   width: 130px; height: 130px;
   background: rgba(255,255,255,.12);
   border-radius: 50%;
+  pointer-events: none;
 }
 .hero-card::after {
   content: '';
@@ -346,6 +404,7 @@ body {
   width: 90px; height: 90px;
   background: rgba(255,255,255,.08);
   border-radius: 50%;
+  pointer-events: none;
 }
 .hero-target { font-size: 3rem; display: block; margin-bottom: 4px; }
 .hero-streak { font-size: 2rem; font-weight: 700; font-family: 'Playfair Display', serif; }
@@ -1128,16 +1187,25 @@ textarea:focus { border-color: var(--lvl-main); outline: none; }
   display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 40px 28px;
+  justify-content: flex-start;
+  padding: 0 28px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 #onboarding.active { display: flex; }
-.ob-step { display: none; width: 100%; flex-direction: column; align-items: center; text-align: center; }
+.ob-step {
+  display: none; width: 100%; flex-direction: column; align-items: center; text-align: center;
+  min-height: 100vh; min-height: 100dvh;
+  padding-top: 32px;
+  padding-bottom: 120px; /* Sabit buton alanı için boşluk */
+  justify-content: center;
+  position: relative;
+}
 .ob-step.active { display: flex; }
 .ob-emoji { font-size: 5rem; margin-bottom: 20px; }
 .ob-title { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.2; }
 .ob-sub { font-size: .95rem; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
-.ob-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 32px; }
+.ob-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; margin-top: auto; }
 .ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: .3s; }
 .ob-dot.active { background: var(--lvl-main); width: 24px; border-radius: 4px; }
 .ob-input {
@@ -1147,14 +1215,20 @@ textarea:focus { border-color: var(--lvl-main); outline: none; }
   background: var(--bg);
 }
 .ob-input:focus { border-color: var(--lvl-main); outline: none; background: white; }
-.ob-btn-row { display: flex; gap: 10px; width: 100%; margin-top: 8px; }
+.ob-btn-row {
+  display: flex; gap: 10px; width: 100%; max-width: 464px;
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  padding: 16px 28px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, white 70%, rgba(255,255,255,0));
+  z-index: 9001;
+}
 .ob-skip { background: none; border: 2px solid var(--border); color: var(--muted); border-radius: var(--r); height: 52px; padding: 0 22px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: .9rem; transition: .2s; }
 .ob-skip:hover { border-color: var(--muted); color: var(--text); }
 .ob-next { flex: 1; height: 52px; background: var(--lvl-main); color: white; border: none; border-radius: var(--r); cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 1rem; transition: .2s; }
 .ob-next:hover { background: var(--lvl-dark); transform: translateY(-1px); }
 
 /* Level test in onboarding */
-.ob-level-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 24px; }
+.ob-level-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 32px; }
 .ob-level-card {
   border: 2.5px solid var(--border); border-radius: 18px; padding: 16px 12px;
   cursor: pointer; transition: .2s; text-align: center; background: white;
@@ -2001,35 +2075,31 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
   <!-- ===== HOME ===== -->
   <div id="home" class="screen active has-tabbar" role="main" aria-label="Ana Ekran">
 
-    <!-- ✨ YENİ: READING & LISTENING BAŞLIĞI -->
-    <div style="text-align:center;padding:20px 16px;background:linear-gradient(135deg,var(--lvl-main),var(--lvl-dark));color:white;">
-      <div style="font-size:2rem;font-weight:900;letter-spacing:2px;margin-bottom:6px;" id="readingListeningTitle">READING & LISTENING</div>
-      <div style="font-size:.9rem;opacity:0.9;">
-        <span id="readingListeningSubtitle">Learn English from Turkish</span>
-        <button onclick="toggleLanguageDirection()" style="margin-left:12px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:white;padding:4px 8px;border-radius:6px;font-size:.8rem;cursor:pointer;">⇄ EN↔TR</button>
-      </div>
-    </div>
-    <div class="top-bar">
-      <div class="logo-area">
-        <img class="logo-img" id="appLogoImg" src="logo.png" style="max-width:60px;height:auto;border-radius:10px;">
-        <div class="logo-text">
-          <span class="logo-main">LinguiVance</span>
-          <span class="logo-sub">Read&amp;Listen</span>
-        </div>
-      </div>
-      <div class="top-bar-actions">
-        <div class="lang-toggle" onclick="toggleLang()">
-          <span id="lt-en" class="active">EN</span>
-          <span id="lt-tr">TR</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hero Streak -->
+    <!-- ✨ TEK ÇERÇEVELİ HERO: Logo + Program + Streak + Dil -->
     <div class="hero-card" id="heroCard">
-      <span class="hero-target" id="heroTarget">🎯</span>
-      <div class="hero-streak" id="heroStreak">4 Days Streak</div>
-      <div class="hero-quote" id="heroQuote">"Every day is a new chapter — write it with English!"</div>
+      <!-- Üst satır: Logo + İsim + Dil bilgisi -->
+      <div class="hero-top-row">
+        <div class="hero-logo-area">
+          <img class="hero-logo-img" id="appLogoImg" src="logo.png" alt="LinguiVance Logo">
+          <div class="hero-logo-text">
+            <span class="hero-brand">LINGUIVANCE</span>
+            <span class="hero-program" id="readingListeningTitle">Reading &amp; Listening</span>
+          </div>
+        </div>
+        <div class="hero-lang-area">
+          <span class="hero-lang-sub" id="readingListeningSubtitle">Learn English from Turkish</span>
+          <div class="hero-lang-toggle" id="langToggleBtn" onclick="toggleAllLang()">
+            <span id="lt-en" class="active">EN</span>
+            <span id="lt-tr">TR</span>
+          </div>
+        </div>
+      </div>
+      <!-- Alt kısım: Streak -->
+      <div class="hero-streak-area">
+        <span class="hero-target" id="heroTarget">🎯</span>
+        <div class="hero-streak" id="heroStreak">0 Days Streak</div>
+        <div class="hero-quote" id="heroQuote">"Every day is a new chapter — write it with English!"</div>
+      </div>
     </div>
 
     <!-- Weekly Tracker -->
@@ -2041,27 +2111,27 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
     <!-- Daily Goal Widget — Üçlü Hedef -->
     <div class="daily-goal-bar" id="dailyGoalBar" style="flex-direction:column;gap:10px;padding:14px 16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-        <span style="font-weight:700;font-size:.88rem;color:var(--text);">📅 Günlük Hedefler</span>
-        <button onclick="changeGoal()" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;">⚙️ Kelime Hedefi: <span id="goalTitle">10</span></button>
+        <span style="font-weight:700;font-size:.88rem;color:var(--text);">📅 <span data-i18n="dailyGoals">Daily Goals</span></span>
+        <button onclick="changeGoal()" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;">⚙️ <span data-i18n="wordGoalLabel">Word Goal:</span> <span id="goalTitle">10</span></button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;">
         <div class="mini-goal-item" id="goalWord">
           <div class="mini-goal-icon">🧠</div>
           <div class="mini-goal-bar-wrap"><div class="mini-goal-bar-fill" id="goalWordFill" style="width:0%;background:#a78bfa;"></div></div>
           <div class="mini-goal-label"><span id="goalWordVal">0</span>/<span id="goalWordMax">10</span></div>
-          <div class="mini-goal-name">Kelime</div>
+          <div class="mini-goal-name" data-i18n="goalWord">Word</div>
         </div>
         <div class="mini-goal-item" id="goalRead">
           <div class="mini-goal-icon">📖</div>
           <div class="mini-goal-bar-wrap"><div class="mini-goal-bar-fill" id="goalReadFill" style="width:0%;background:#22c55e;"></div></div>
           <div class="mini-goal-label"><span id="goalReadVal">0</span>/1</div>
-          <div class="mini-goal-name">Okuma</div>
+          <div class="mini-goal-name" data-i18n="goalRead">Reading</div>
         </div>
         <div class="mini-goal-item" id="goalListen">
           <div class="mini-goal-icon">🎧</div>
           <div class="mini-goal-bar-wrap"><div class="mini-goal-bar-fill" id="goalListenFill" style="width:0%;background:#06b6d4;"></div></div>
           <div class="mini-goal-label"><span id="goalListenVal">0</span>/1</div>
-          <div class="mini-goal-name">Dinleme</div>
+          <div class="mini-goal-name" data-i18n="goalListen">Listening</div>
         </div>
       </div>
     </div>
@@ -2070,7 +2140,6 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
     <button class="btn btn-primary" onclick="tabGo('learn')"><span>📖</span> <span data-i18n="navStories">Stories</span></button>
     <button class="btn btn-primary" onclick="openCards()"><span>🧠</span> <span data-i18n="navVocab">Vocabulary Vault</span></button>
     <button class="btn btn-success" onclick="openDictCards()"><span>📚</span> <span data-i18n="navDict">Dictionary Study</span></button>
-    <button class="btn btn-secondary" onclick="tabGo('stats')"><span>📊</span> <span data-i18n="navStats">Statistics</span></button>
   </div>
 
   <!-- ===== SETTINGS ===== -->
@@ -2377,23 +2446,23 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
   <nav class="tab-bar" id="tabBar" role="navigation" aria-label="Main Navigation">
     <button class="tab-item active" id="tab-home" onclick="tabGo('home')" role="tab" aria-selected="true" aria-controls="home" aria-label="Home">
       <span class="tab-icon" aria-hidden="true">🏠</span>
-      <span class="tab-label">Ana Sayfa</span>
+      <span class="tab-label" data-i18n="tabHome">Home</span>
     </button>
     <button class="tab-item" id="tab-learn" onclick="tabGo('learn')" role="tab" aria-selected="false" aria-controls="readList" aria-label="Reading stories">
       <span class="tab-icon" aria-hidden="true">📖</span>
-      <span class="tab-label">Öğren</span>
+      <span class="tab-label" data-i18n="tabLearn">Learn</span>
     </button>
     <button class="tab-item" id="tab-vocab" onclick="tabGo('vocab')" role="tab" aria-selected="false" aria-controls="vocabScreen" aria-label="Vocabulary flashcards">
       <span class="tab-icon" aria-hidden="true">🧠</span>
-      <span class="tab-label">Kelimeler</span>
+      <span class="tab-label" data-i18n="tabWords">Words</span>
     </button>
     <button class="tab-item" id="tab-stats" onclick="tabGo('stats')" role="tab" aria-selected="false" aria-controls="stats" aria-label="Progress statistics">
       <span class="tab-icon" aria-hidden="true">📊</span>
-      <span class="tab-label">İlerleme</span>
+      <span class="tab-label" data-i18n="tabProgress">Progress</span>
     </button>
     <button class="tab-item" id="tab-profile" onclick="tabGo('profile')" role="tab" aria-selected="false" aria-controls="profileScreen" aria-label="Profile and settings">
       <span class="tab-icon" aria-hidden="true">👤</span>
-      <span class="tab-label">Profil</span>
+      <span class="tab-label" data-i18n="tabProfile">Profile</span>
     </button>
   </nav>
 
@@ -2714,6 +2783,8 @@ const i18n = {
     wellDone:'Goal achieved! Keep going! 🎯',
     notYet:'Complete a story or quiz today! 💪',
     appTitle:'Master English',
+    tabHome:'Home', tabLearn:'Learn', tabWords:'Words', tabProgress:'Progress', tabProfile:'Profile',
+    dailyGoals:'Daily Goals', wordGoalLabel:'Word Goal:', goalWord:'Word', goalRead:'Reading', goalListen:'Listening',
   },
   TR: {
     navStories:'Okuma Metinleri', navVocab:'Bilinmeyen Kelimeler Kasası', navDict:'Sözlük Çalış', navStats:'İstatistikler',
@@ -2726,6 +2797,8 @@ const i18n = {
     wellDone:'Hedef tamamlandı! Devam et! 🎯',
     notYet:"Bugün bir metin oku ya da test çöz! 💪",
     appTitle:'Master İngilizce',
+    tabHome:'Ana Sayfa', tabLearn:'Öğren', tabWords:'Kelimeler', tabProgress:'İlerleme', tabProfile:'Profil',
+    dailyGoals:'Günlük Hedefler', wordGoalLabel:'Kelime Hedefi:', goalWord:'Kelime', goalRead:'Okuma', goalListen:'Dinleme',
   }
 };
 
@@ -3017,11 +3090,8 @@ function notify(msg) {
 }
 
 // ---- LANGUAGE ----
-function toggleLang() {
-  db.lang = db.lang === 'EN' ? 'TR' : 'EN';
-  save();
-  applyLang();
-}
+// toggleLang artık toggleAllLang'a yönlendirilir (tek buton)
+function toggleLang() { toggleAllLang(); }
 function applyLang() {
   const L = db.lang;
   document.getElementById('lt-en').className = L==='EN'?'active':'';
@@ -3333,74 +3403,164 @@ function renderReadingContent() {
   area.innerHTML = '';
   const btn = document.getElementById('readLangToggle');
 
+  // Çift yönlü mod: db.sourceLanguage kontrolü
+  const isReversed = db.sourceLanguage === 'TR'; // TR→EN modu
+
   if (readLangMode === 'TR') {
-    // Show Turkish translation - plain text, no word tapping
-    btn.innerText = '🌐 EN';
+    // ── Çeviri Modu (readLangMode=TR) ──
+    // Buton: kaynak dile geri dönmek için
+    btn.innerText = isReversed ? '🌐 TR' : '🌐 EN';
     btn.style.background = '#059669';
-    const trText = activeR.tr || 'Türkçe çeviri bulunamadı.';
-    const para = document.createElement('p');
-    para.style.fontFamily = "'DM Sans', sans-serif";
-    para.style.color = '#334155';
-    para.style.lineHeight = '1.8';
-    para.innerText = trText;
-    area.appendChild(para);
-  } else {
-    // Show English text with interactive word spans
-    btn.innerText = '🌐 TR';
-    btn.style.background = '#f59e0b';
-    const lines = activeR.en.trim().split('\n');
-    // Skip the first line if it's just the title (matches r.title)
-    const bodyLines = lines.length > 1 ? lines.slice(1) : lines;
-    const body = bodyLines.join(' ').trim();
 
-    const para = document.createElement('p');
-    let wordIndex = 0;
-    body.split(/\s+/).forEach(rawWord => {
-      const span = document.createElement('span');
-      span.className = 'word-span';
-      span.dataset.wi = wordIndex++;   // TTS highlight için index
-      const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
-      const dictMatch = clean ? findDictWord(rawWord) : null;
-
-      // Tooltip oluştur (sözlükte varsa anlam göster)
-      if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
-        const tip = document.createElement('span');
-        tip.className = 'word-tooltip';
-        tip.innerText = dictMatch.tr;
-        span.appendChild(tip);
-      }
-
-      // Kelime metnini ekle
-      const txt = document.createTextNode(rawWord + ' ');
-      span.appendChild(txt);
-
-      if (clean && db.unknown.find(u => u.w === clean)) span.classList.add('is-unknown');
-
-      span.onclick = () => {
-        if (!clean) return;
-        const existing = db.unknown.findIndex(u => u.w === clean);
-        if (existing === -1) {
-          const newWord = dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' };
-          // Initialize SRS fields for new word
-          newWord.interval = 0;
-          newWord.repetitions = 0;
-          newWord.easeFactor = 2.5;
-          newWord.nextReview = 0;
-          db.unknown.push(newWord);
-          span.classList.add('is-unknown');
-          save();
-          const meaning = dictMatch ? ` (${dictMatch.tr})` : '';
-          notify(`"${clean}"${meaning} → Kasaya eklendi 📚`);
-        } else {
-          db.unknown.splice(existing, 1);
-          span.classList.remove('is-unknown');
-          save();
-          notify(`"${clean}" → Kasadan çıkarıldı 🗑️`);
+    if (isReversed) {
+      // TR→EN: İngilizce metin göster (çeviri olarak), interaktif kelimelerle
+      const enText = activeR.en || 'English translation not found.';
+      const lines = enText.trim().split('\n');
+      const bodyLines = lines.length > 1 ? lines.slice(1) : lines;
+      const body = bodyLines.join(' ').trim();
+      const para = document.createElement('p');
+      para.style.fontFamily = "'DM Sans', sans-serif";
+      para.style.lineHeight = '1.8';
+      body.split(/\s+/).forEach(rawWord => {
+        const span = document.createElement('span');
+        span.className = 'word-span';
+        const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
+        const dictMatch = clean ? findDictWord(rawWord) : null;
+        if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
+          const tip = document.createElement('span');
+          tip.className = 'word-tooltip';
+          tip.innerText = dictMatch.tr;
+          span.appendChild(tip);
         }
-      };
-      para.appendChild(span);
-    });
-    area.appendChild(para);
+        span.appendChild(document.createTextNode(rawWord + ' '));
+        span.onclick = () => { if (clean && dictMatch) notify(`${clean} → ${dictMatch.tr || '?'}`); };
+        para.appendChild(span);
+      });
+      area.appendChild(para);
+    } else {
+      // EN→TR: Türkçe metin göster (çeviri olarak), interaktif kelimelerle (Türkçe→İngilizce tooltip)
+      const trText = activeR.tr || 'Türkçe çeviri bulunamadı.';
+      const para = document.createElement('p');
+      para.style.fontFamily = "'DM Sans', sans-serif";
+      para.style.lineHeight = '1.8';
+      trText.split(/\s+/).forEach(rawWord => {
+        const span = document.createElement('span');
+        span.className = 'word-span';
+        const cleanTr = rawWord.toLowerCase().replace(/[^a-zçğıöşü]/g, '');
+        const reverseMatch = cleanTr ? findReverseDictWord(cleanTr) : null;
+        if (reverseMatch) {
+          const tip = document.createElement('span');
+          tip.className = 'word-tooltip';
+          tip.innerText = reverseMatch.w; // İngilizce karşılık
+          span.appendChild(tip);
+        }
+        span.appendChild(document.createTextNode(rawWord + ' '));
+        span.onclick = () => { if (cleanTr && reverseMatch) notify(`${cleanTr} → ${reverseMatch.w}`); };
+        para.appendChild(span);
+      });
+      area.appendChild(para);
+    }
+  } else {
+    // ── Kaynak Dil Modu (readLangMode=EN) ──
+    // Buton: çeviriye geçmek için
+    btn.innerText = isReversed ? '🌐 EN' : '🌐 TR';
+    btn.style.background = '#f59e0b';
+
+    if (isReversed) {
+      // TR→EN: Türkçe metin göster (ana metin), interaktif kelimelerle (Türkçe→İngilizce tooltip)
+      const trText = activeR.tr || 'Türkçe metin bulunamadı.';
+      const para = document.createElement('p');
+      para.style.fontFamily = "'DM Sans', sans-serif";
+      para.style.lineHeight = '1.8';
+      let wordIndex = 0;
+      trText.split(/\s+/).forEach(rawWord => {
+        const span = document.createElement('span');
+        span.className = 'word-span';
+        span.dataset.wi = wordIndex++;
+        const cleanTr = rawWord.toLowerCase().replace(/[^a-zçğıöşü]/g, '');
+        const reverseMatch = cleanTr ? findReverseDictWord(cleanTr) : null;
+        // Tooltip: İngilizce karşılık göster
+        if (reverseMatch) {
+          const tip = document.createElement('span');
+          tip.className = 'word-tooltip';
+          tip.innerText = reverseMatch.w;
+          span.appendChild(tip);
+        }
+        span.appendChild(document.createTextNode(rawWord + ' '));
+        // Tıklama: kelimeyi kasaya ekle/çıkar (İngilizce karşılığıyla)
+        span.onclick = () => {
+          if (!cleanTr || !reverseMatch) return;
+          const engWord = reverseMatch.w;
+          const existing = db.unknown.findIndex(u => u.w === engWord);
+          if (existing === -1) {
+            const newWord = {...reverseMatch};
+            newWord.interval = 0;
+            newWord.repetitions = 0;
+            newWord.easeFactor = 2.5;
+            newWord.nextReview = 0;
+            db.unknown.push(newWord);
+            span.classList.add('is-unknown');
+            save();
+            notify(`"${engWord}" (${cleanTr}) → Kasaya eklendi 📚`);
+          } else {
+            db.unknown.splice(existing, 1);
+            span.classList.remove('is-unknown');
+            save();
+            notify(`"${engWord}" → Kasadan çıkarıldı 🗑️`);
+          }
+        };
+        // Kasada olan kelimeleri işaretle
+        if (reverseMatch && db.unknown.find(u => u.w === reverseMatch.w)) span.classList.add('is-unknown');
+        para.appendChild(span);
+      });
+      area.appendChild(para);
+    } else {
+      // EN→TR: İngilizce metin göster (ana metin), interaktif kelimelerle (İngilizce→Türkçe tooltip)
+      const lines = activeR.en.trim().split('\n');
+      const bodyLines = lines.length > 1 ? lines.slice(1) : lines;
+      const body = bodyLines.join(' ').trim();
+
+      const para = document.createElement('p');
+      let wordIndex = 0;
+      body.split(/\s+/).forEach(rawWord => {
+        const span = document.createElement('span');
+        span.className = 'word-span';
+        span.dataset.wi = wordIndex++;
+        const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
+        const dictMatch = clean ? findDictWord(rawWord) : null;
+        if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
+          const tip = document.createElement('span');
+          tip.className = 'word-tooltip';
+          tip.innerText = dictMatch.tr;
+          span.appendChild(tip);
+        }
+        span.appendChild(document.createTextNode(rawWord + ' '));
+        if (clean && db.unknown.find(u => u.w === clean)) span.classList.add('is-unknown');
+        span.onclick = () => {
+          if (!clean) return;
+          const existing = db.unknown.findIndex(u => u.w === clean);
+          if (existing === -1) {
+            const newWord = dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' };
+            newWord.interval = 0;
+            newWord.repetitions = 0;
+            newWord.easeFactor = 2.5;
+            newWord.nextReview = 0;
+            db.unknown.push(newWord);
+            span.classList.add('is-unknown');
+            save();
+            const meaning = dictMatch ? ` (${dictMatch.tr})` : '';
+            notify(`"${clean}"${meaning} → Kasaya eklendi 📚`);
+          } else {
+            db.unknown.splice(existing, 1);
+            span.classList.remove('is-unknown');
+            save();
+            notify(`"${clean}" → Kasadan çıkarıldı 🗑️`);
+          }
+        };
+        para.appendChild(span);
+      });
+      area.appendChild(para);
+    }
   }
 }
 
@@ -3412,7 +3572,10 @@ function toggleReadLang() {
 
 function startReading(r) {
   activeR = r;
-  readLangMode = 'EN'; // always start with English
+  // Her zaman kaynak dil metni ile başla
+  // readLangMode='EN': kaynak dil metni (EN→TR'de İngilizce, TR→EN'de Türkçe)
+  // readLangMode='TR': çeviri metni (EN→TR'de Türkçe, TR→EN'de İngilizce)
+  readLangMode = 'EN';
   document.getElementById('readTitle').innerText = r.title;
   renderReadingContent();
   show('readMod');
@@ -4528,7 +4691,7 @@ async function seedSuperAdmin() {
     username: 'admin241',
     email: 'mehkutlu@gmail.com',
     name: 'Mehmet Kutlu',
-    pw: 'f6a40d6166cef5dfe9af805241c622af9ee8c90a71a0375826c884559c89f415', // SHA-256(Mkutlu87654321)
+    pw: '5c6dc92bf6e423cffb7130f6c597af7c89ed8c03f087b1623e548ca701544e5c', // SHA-256(Mkutlu2108)
     isAdmin: true,
     isSuperAdmin: true,
     createdAt: '2024-01-01T00:00:00.000Z'
@@ -6036,6 +6199,67 @@ function findDictWord(word) {
   return null;
 }
 
+// ── Ters Sözlük: Türkçe kelimeyle İngilizce karşılık bul ──
+let _reverseDictCache = null;
+let _reverseDictVersion = 0;
+
+function buildReverseDictionary() {
+  const currentLen = db.dictionary.length;
+  if (_reverseDictCache && _reverseDictVersion === currentLen) return _reverseDictCache;
+
+  _reverseDictCache = new Map();
+  db.dictionary.forEach(entry => {
+    if (!entry.tr || entry.tr === '?') return;
+    // Türkçe çeviri birden fazla anlam içerebilir (virgülle ayrılmış)
+    const trMeanings = entry.tr.split(/[,;/]/).map(m => m.trim().toLowerCase());
+    trMeanings.forEach(trWord => {
+      if (trWord && !_reverseDictCache.has(trWord)) {
+        _reverseDictCache.set(trWord, entry);
+      }
+    });
+  });
+  _reverseDictVersion = currentLen;
+  return _reverseDictCache;
+}
+
+function findReverseDictWord(trWord) {
+  if (!trWord || !db.dictionary.length) return null;
+  const clean = trWord.toLowerCase().replace(/[^a-zçğıöşü]/g, '');
+  if (!clean || clean.length < 2) return null;
+
+  const reverseDict = buildReverseDictionary();
+
+  // 1. Tam eşleşme
+  if (reverseDict.has(clean)) return reverseDict.get(clean);
+
+  // 2. Türkçe ek temizleme (basit)
+  const trStems = stemTurkishWord(clean);
+  for (const stem of trStems) {
+    if (stem === clean) continue;
+    if (reverseDict.has(stem)) return reverseDict.get(stem);
+  }
+  return null;
+}
+
+// Basit Türkçe kök bulma (yaygın ekler)
+function stemTurkishWord(word) {
+  if (!word || word.length < 3) return [word];
+  const stems = new Set([word]);
+  // Çoğul eki: -lar, -ler
+  if (word.endsWith('lar') || word.endsWith('ler')) stems.add(word.slice(0, -3));
+  // Hal ekleri: -da, -de, -dan, -den, -a, -e, -ı, -i, -u, -ü
+  if (word.endsWith('dan') || word.endsWith('den') || word.endsWith('tan') || word.endsWith('ten')) stems.add(word.slice(0, -3));
+  if (word.endsWith('da') || word.endsWith('de') || word.endsWith('ta') || word.endsWith('te')) stems.add(word.slice(0, -2));
+  if (word.endsWith('ın') || word.endsWith('in') || word.endsWith('un') || word.endsWith('ün')) stems.add(word.slice(0, -2));
+  // İyelik ekleri: -ını, -ini, -unu, -ünü
+  if (word.endsWith('ını') || word.endsWith('ini') || word.endsWith('unu') || word.endsWith('ünü')) stems.add(word.slice(0, -3));
+  // Fiil ekleri: -mek, -mak, -yor, -dı, -di, -tı, -ti
+  if (word.endsWith('mak') || word.endsWith('mek')) stems.add(word.slice(0, -3));
+  if (word.endsWith('yor')) stems.add(word.slice(0, -3));
+  if (word.endsWith('dı') || word.endsWith('di') || word.endsWith('tı') || word.endsWith('ti')) stems.add(word.slice(0, -2));
+  return [...stems];
+}
+
 function normalizeWord(raw) {
   // Zaten iç formatta mı?
   if (raw.w) return raw;
@@ -6296,31 +6520,49 @@ window.addEventListener('popstate', function(e) {
 });
 
 // ✨ Çift Yönlü Dil Desteği Fonksiyonları
-function toggleLanguageDirection() {
-  // Dilleri değiştir
+// ── TEK BUTON: Hem UI dili hem öğrenme yönünü birlikte değiştir ──
+function toggleAllLang() {
+  // Öğrenme yönünü değiştir
   [db.sourceLanguage, db.targetLanguage] = [db.targetLanguage, db.sourceLanguage];
+  // UI dilini de değiştir
+  db.lang = db.sourceLanguage === 'EN' ? 'EN' : 'TR';
   save();
-  updateLanguageDisplay();
-  notify(`🔄 Dil değiştirildi: ${db.sourceLanguage} → ${db.targetLanguage}`);
+  applyLang(); // UI dilini güncelle (i18n, hero text vb.)
+  updateLanguageDisplay(); // başlık, alt yazı, toggle görünümü
+  buildWeekRow(); // hafta günlerini güncelle
+  // Eğer okuma modundaysa içeriği yeniden render et
+  if (activeR && document.getElementById('readMod')?.classList.contains('active')) {
+    readLangMode = 'EN';
+    renderReadingContent();
+  }
 }
+
+// Eski fonksiyonlar uyumluluk için (readMod butonları kullanır)
+function toggleLanguageDirection() { toggleAllLang(); }
 
 function updateLanguageDisplay() {
   const title = document.getElementById('readingListeningTitle');
   const subtitle = document.getElementById('readingListeningSubtitle');
 
   if (title) {
-    title.textContent = db.sourceLanguage === 'EN' ? 'READING & LISTENING' : 'OKUMA & DİNLEME';
+    title.textContent = db.sourceLanguage === 'EN' ? 'Reading & Listening' : 'Okuma & Dinleme';
   }
 
   if (subtitle) {
     if (db.sourceLanguage === 'EN' && db.targetLanguage === 'TR') {
       subtitle.textContent = 'Learn English from Turkish';
     } else if (db.sourceLanguage === 'TR' && db.targetLanguage === 'EN') {
-      subtitle.textContent = 'Türkçeyi İngilizceden Öğren';
+      subtitle.textContent = 'Learn Turkish from English';
     } else {
       subtitle.textContent = `${db.sourceLanguage} → ${db.targetLanguage}`;
     }
   }
+
+  // Toggle buton görünümü
+  const enSpan = document.getElementById('lt-en');
+  const trSpan = document.getElementById('lt-tr');
+  if (enSpan) enSpan.className = db.sourceLanguage === 'EN' ? 'active' : '';
+  if (trSpan) trSpan.className = db.sourceLanguage === 'TR' ? 'active' : '';
 }
 
 // Admin data editing functions
