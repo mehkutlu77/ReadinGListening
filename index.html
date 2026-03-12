@@ -287,41 +287,7 @@ body {
   font-weight: 700;
   letter-spacing: -.2px;
 }
-.hero-lang-area {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.hero-lang-sub {
-  font-size: .62rem;
-  opacity: 0.8;
-  white-space: nowrap;
-}
-.hero-lang-toggle {
-  display: flex;
-  background: rgba(255,255,255,0.15);
-  border: 1.5px solid rgba(255,255,255,0.4);
-  border-radius: 50px;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
-  z-index: 2;
-  -webkit-tap-highlight-color: rgba(255,255,255,0.2);
-}
-.hero-lang-toggle span {
-  padding: 6px 14px;
-  font-size: .72rem;
-  font-weight: 700;
-  color: rgba(255,255,255,0.6);
-  transition: .2s;
-}
-.hero-lang-toggle span.active {
-  background: rgba(255,255,255,0.3);
-  color: white;
-  border-radius: 50px;
-}
+/* hero-lang-area ve toggle kaldırıldı — dil sabit EN→TR */
 .hero-streak-area {
   position: relative;
   z-index: 1;
@@ -2075,22 +2041,15 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
   <!-- ===== HOME ===== -->
   <div id="home" class="screen active has-tabbar" role="main" aria-label="Ana Ekran">
 
-    <!-- ✨ TEK ÇERÇEVELİ HERO: Logo + Program + Streak + Dil -->
+    <!-- ✨ TEK ÇERÇEVELİ HERO: Logo + Program + Streak -->
     <div class="hero-card" id="heroCard">
-      <!-- Üst satır: Logo + İsim + Dil bilgisi -->
+      <!-- Üst satır: Logo + İsim -->
       <div class="hero-top-row">
         <div class="hero-logo-area">
           <img class="hero-logo-img" id="appLogoImg" src="logo.png" alt="LinguiVance Logo">
           <div class="hero-logo-text">
             <span class="hero-brand">LINGUIVANCE</span>
-            <span class="hero-program" id="readingListeningTitle">Reading &amp; Listening</span>
-          </div>
-        </div>
-        <div class="hero-lang-area">
-          <span class="hero-lang-sub" id="readingListeningSubtitle">Learn English from Turkish</span>
-          <div class="hero-lang-toggle" id="langToggleBtn" onclick="toggleAllLang()">
-            <span id="lt-en" class="active">EN</span>
-            <span id="lt-tr">TR</span>
+            <span class="hero-program">Reading &amp; Listening</span>
           </div>
         </div>
       </div>
@@ -2111,27 +2070,27 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
     <!-- Daily Goal Widget — Üçlü Hedef -->
     <div class="daily-goal-bar" id="dailyGoalBar" style="flex-direction:column;gap:10px;padding:14px 16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-        <span style="font-weight:700;font-size:.88rem;color:var(--text);">📅 <span data-i18n="dailyGoals">Daily Goals</span></span>
-        <button onclick="changeGoal()" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;">⚙️ <span data-i18n="wordGoalLabel">Word Goal:</span> <span id="goalTitle">10</span></button>
+        <span style="font-weight:700;font-size:.88rem;color:var(--text);">📅 Günlük Hedefler</span>
+        <button onclick="changeGoal()" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;">⚙️ Kelime Hedefi: <span id="goalTitle">10</span></button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;">
         <div class="mini-goal-item" id="goalWord">
           <div class="mini-goal-icon">🧠</div>
           <div class="mini-goal-bar-wrap"><div class="mini-goal-bar-fill" id="goalWordFill" style="width:0%;background:#a78bfa;"></div></div>
           <div class="mini-goal-label"><span id="goalWordVal">0</span>/<span id="goalWordMax">10</span></div>
-          <div class="mini-goal-name" data-i18n="goalWord">Word</div>
+          <div class="mini-goal-name">Kelime</div>
         </div>
         <div class="mini-goal-item" id="goalRead">
           <div class="mini-goal-icon">📖</div>
           <div class="mini-goal-bar-wrap"><div class="mini-goal-bar-fill" id="goalReadFill" style="width:0%;background:#22c55e;"></div></div>
           <div class="mini-goal-label"><span id="goalReadVal">0</span>/1</div>
-          <div class="mini-goal-name" data-i18n="goalRead">Reading</div>
+          <div class="mini-goal-name">Okuma</div>
         </div>
         <div class="mini-goal-item" id="goalListen">
           <div class="mini-goal-icon">🎧</div>
           <div class="mini-goal-bar-wrap"><div class="mini-goal-bar-fill" id="goalListenFill" style="width:0%;background:#06b6d4;"></div></div>
           <div class="mini-goal-label"><span id="goalListenVal">0</span>/1</div>
-          <div class="mini-goal-name" data-i18n="goalListen">Listening</div>
+          <div class="mini-goal-name">Dinleme</div>
         </div>
       </div>
     </div>
@@ -2446,23 +2405,23 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
   <nav class="tab-bar" id="tabBar" role="navigation" aria-label="Main Navigation">
     <button class="tab-item active" id="tab-home" onclick="tabGo('home')" role="tab" aria-selected="true" aria-controls="home" aria-label="Home">
       <span class="tab-icon" aria-hidden="true">🏠</span>
-      <span class="tab-label" data-i18n="tabHome">Home</span>
+      <span class="tab-label">Ana Sayfa</span>
     </button>
     <button class="tab-item" id="tab-learn" onclick="tabGo('learn')" role="tab" aria-selected="false" aria-controls="readList" aria-label="Reading stories">
       <span class="tab-icon" aria-hidden="true">📖</span>
-      <span class="tab-label" data-i18n="tabLearn">Learn</span>
+      <span class="tab-label">Öğren</span>
     </button>
     <button class="tab-item" id="tab-vocab" onclick="tabGo('vocab')" role="tab" aria-selected="false" aria-controls="vocabScreen" aria-label="Vocabulary flashcards">
       <span class="tab-icon" aria-hidden="true">🧠</span>
-      <span class="tab-label" data-i18n="tabWords">Words</span>
+      <span class="tab-label">Kelimeler</span>
     </button>
     <button class="tab-item" id="tab-stats" onclick="tabGo('stats')" role="tab" aria-selected="false" aria-controls="stats" aria-label="Progress statistics">
       <span class="tab-icon" aria-hidden="true">📊</span>
-      <span class="tab-label" data-i18n="tabProgress">Progress</span>
+      <span class="tab-label">İlerleme</span>
     </button>
     <button class="tab-item" id="tab-profile" onclick="tabGo('profile')" role="tab" aria-selected="false" aria-controls="profileScreen" aria-label="Profile and settings">
       <span class="tab-icon" aria-hidden="true">👤</span>
-      <span class="tab-label" data-i18n="tabProfile">Profile</span>
+      <span class="tab-label">Profil</span>
     </button>
   </nav>
 
@@ -2741,10 +2700,9 @@ body.dark-mode .daily-goal-bar { background: #0f172a; border-color: #334155; }
 // ---- STATE ----
 let db = {
   lvl: 'Sprout',
-  lang: 'EN',
-  // ✨ YENİ: Çift yönlü dil desteği (TR↔EN / EN↔TR)
-  sourceLanguage: 'EN',    // Kaynak dil: EN (İngilizce) veya TR (Türkçe)
-  targetLanguage: 'TR',    // Hedef dil: TR (Türkçe) veya EN (İngilizce)
+  lang: 'TR',
+  sourceLanguage: 'EN',
+  targetLanguage: 'TR',
   dictionary: [],
   unknown: [],
   readings: [],
@@ -3090,13 +3048,8 @@ function notify(msg) {
 }
 
 // ---- LANGUAGE ----
-// toggleLang artık toggleAllLang'a yönlendirilir (tek buton)
-function toggleLang() { toggleAllLang(); }
 function applyLang() {
   const L = db.lang;
-  document.getElementById('lt-en').className = L==='EN'?'active':'';
-  document.getElementById('lt-tr').className = L==='TR'?'active':'';
-  // Logo sabit kalır (appLogoText artık yok)
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (i18n[L][key]) el.innerText = i18n[L][key];
@@ -3403,164 +3356,69 @@ function renderReadingContent() {
   area.innerHTML = '';
   const btn = document.getElementById('readLangToggle');
 
-  // Çift yönlü mod: db.sourceLanguage kontrolü
-  const isReversed = db.sourceLanguage === 'TR'; // TR→EN modu
-
   if (readLangMode === 'TR') {
-    // ── Çeviri Modu (readLangMode=TR) ──
-    // Buton: kaynak dile geri dönmek için
-    btn.innerText = isReversed ? '🌐 TR' : '🌐 EN';
+    // ── Türkçe Çeviri Modu ──
+    btn.innerText = '🌐 EN';
     btn.style.background = '#059669';
-
-    if (isReversed) {
-      // TR→EN: İngilizce metin göster (çeviri olarak), interaktif kelimelerle
-      const enText = activeR.en || 'English translation not found.';
-      const lines = enText.trim().split('\n');
-      const bodyLines = lines.length > 1 ? lines.slice(1) : lines;
-      const body = bodyLines.join(' ').trim();
-      const para = document.createElement('p');
-      para.style.fontFamily = "'DM Sans', sans-serif";
-      para.style.lineHeight = '1.8';
-      body.split(/\s+/).forEach(rawWord => {
-        const span = document.createElement('span');
-        span.className = 'word-span';
-        const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
-        const dictMatch = clean ? findDictWord(rawWord) : null;
-        if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
-          const tip = document.createElement('span');
-          tip.className = 'word-tooltip';
-          tip.innerText = dictMatch.tr;
-          span.appendChild(tip);
-        }
-        span.appendChild(document.createTextNode(rawWord + ' '));
-        span.onclick = () => { if (clean && dictMatch) notify(`${clean} → ${dictMatch.tr || '?'}`); };
-        para.appendChild(span);
-      });
-      area.appendChild(para);
-    } else {
-      // EN→TR: Türkçe metin göster (çeviri olarak), interaktif kelimelerle (Türkçe→İngilizce tooltip)
-      const trText = activeR.tr || 'Türkçe çeviri bulunamadı.';
-      const para = document.createElement('p');
-      para.style.fontFamily = "'DM Sans', sans-serif";
-      para.style.lineHeight = '1.8';
-      trText.split(/\s+/).forEach(rawWord => {
-        const span = document.createElement('span');
-        span.className = 'word-span';
-        const cleanTr = rawWord.toLowerCase().replace(/[^a-zçğıöşü]/g, '');
-        const reverseMatch = cleanTr ? findReverseDictWord(cleanTr) : null;
-        if (reverseMatch) {
-          const tip = document.createElement('span');
-          tip.className = 'word-tooltip';
-          tip.innerText = reverseMatch.w; // İngilizce karşılık
-          span.appendChild(tip);
-        }
-        span.appendChild(document.createTextNode(rawWord + ' '));
-        span.onclick = () => { if (cleanTr && reverseMatch) notify(`${cleanTr} → ${reverseMatch.w}`); };
-        para.appendChild(span);
-      });
-      area.appendChild(para);
-    }
+    const trText = activeR.tr || 'Türkçe çeviri bulunamadı.';
+    const para = document.createElement('p');
+    para.style.fontFamily = "'DM Sans', sans-serif";
+    para.style.lineHeight = '1.8';
+    trText.split(/\s+/).forEach(rawWord => {
+      const span = document.createElement('span');
+      span.className = 'word-span';
+      span.appendChild(document.createTextNode(rawWord + ' '));
+      para.appendChild(span);
+    });
+    area.appendChild(para);
   } else {
-    // ── Kaynak Dil Modu (readLangMode=EN) ──
-    // Buton: çeviriye geçmek için
-    btn.innerText = isReversed ? '🌐 EN' : '🌐 TR';
+    // ── İngilizce Ana Metin Modu ──
+    btn.innerText = '🌐 TR';
     btn.style.background = '#f59e0b';
+    const lines = activeR.en.trim().split('\n');
+    const bodyLines = lines.length > 1 ? lines.slice(1) : lines;
+    const body = bodyLines.join(' ').trim();
 
-    if (isReversed) {
-      // TR→EN: Türkçe metin göster (ana metin), interaktif kelimelerle (Türkçe→İngilizce tooltip)
-      const trText = activeR.tr || 'Türkçe metin bulunamadı.';
-      const para = document.createElement('p');
-      para.style.fontFamily = "'DM Sans', sans-serif";
-      para.style.lineHeight = '1.8';
-      let wordIndex = 0;
-      trText.split(/\s+/).forEach(rawWord => {
-        const span = document.createElement('span');
-        span.className = 'word-span';
-        span.dataset.wi = wordIndex++;
-        const cleanTr = rawWord.toLowerCase().replace(/[^a-zçğıöşü]/g, '');
-        const reverseMatch = cleanTr ? findReverseDictWord(cleanTr) : null;
-        // Tooltip: İngilizce karşılık göster
-        if (reverseMatch) {
-          const tip = document.createElement('span');
-          tip.className = 'word-tooltip';
-          tip.innerText = reverseMatch.w;
-          span.appendChild(tip);
+    const para = document.createElement('p');
+    let wordIndex = 0;
+    body.split(/\s+/).forEach(rawWord => {
+      const span = document.createElement('span');
+      span.className = 'word-span';
+      span.dataset.wi = wordIndex++;
+      const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
+      const dictMatch = clean ? findDictWord(rawWord) : null;
+      if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
+        const tip = document.createElement('span');
+        tip.className = 'word-tooltip';
+        tip.innerText = dictMatch.tr;
+        span.appendChild(tip);
+      }
+      span.appendChild(document.createTextNode(rawWord + ' '));
+      if (clean && db.unknown.find(u => u.w === clean)) span.classList.add('is-unknown');
+      span.onclick = () => {
+        if (!clean) return;
+        const existing = db.unknown.findIndex(u => u.w === clean);
+        if (existing === -1) {
+          const newWord = dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' };
+          newWord.interval = 0;
+          newWord.repetitions = 0;
+          newWord.easeFactor = 2.5;
+          newWord.nextReview = 0;
+          db.unknown.push(newWord);
+          span.classList.add('is-unknown');
+          save();
+          const meaning = dictMatch ? ` (${dictMatch.tr})` : '';
+          notify(`"${clean}"${meaning} → Kasaya eklendi 📚`);
+        } else {
+          db.unknown.splice(existing, 1);
+          span.classList.remove('is-unknown');
+          save();
+          notify(`"${clean}" → Kasadan çıkarıldı 🗑️`);
         }
-        span.appendChild(document.createTextNode(rawWord + ' '));
-        // Tıklama: kelimeyi kasaya ekle/çıkar (İngilizce karşılığıyla)
-        span.onclick = () => {
-          if (!cleanTr || !reverseMatch) return;
-          const engWord = reverseMatch.w;
-          const existing = db.unknown.findIndex(u => u.w === engWord);
-          if (existing === -1) {
-            const newWord = {...reverseMatch};
-            newWord.interval = 0;
-            newWord.repetitions = 0;
-            newWord.easeFactor = 2.5;
-            newWord.nextReview = 0;
-            db.unknown.push(newWord);
-            span.classList.add('is-unknown');
-            save();
-            notify(`"${engWord}" (${cleanTr}) → Kasaya eklendi 📚`);
-          } else {
-            db.unknown.splice(existing, 1);
-            span.classList.remove('is-unknown');
-            save();
-            notify(`"${engWord}" → Kasadan çıkarıldı 🗑️`);
-          }
-        };
-        // Kasada olan kelimeleri işaretle
-        if (reverseMatch && db.unknown.find(u => u.w === reverseMatch.w)) span.classList.add('is-unknown');
-        para.appendChild(span);
-      });
-      area.appendChild(para);
-    } else {
-      // EN→TR: İngilizce metin göster (ana metin), interaktif kelimelerle (İngilizce→Türkçe tooltip)
-      const lines = activeR.en.trim().split('\n');
-      const bodyLines = lines.length > 1 ? lines.slice(1) : lines;
-      const body = bodyLines.join(' ').trim();
-
-      const para = document.createElement('p');
-      let wordIndex = 0;
-      body.split(/\s+/).forEach(rawWord => {
-        const span = document.createElement('span');
-        span.className = 'word-span';
-        span.dataset.wi = wordIndex++;
-        const clean = rawWord.toLowerCase().replace(/[^a-z]/g, '');
-        const dictMatch = clean ? findDictWord(rawWord) : null;
-        if (dictMatch && dictMatch.tr && dictMatch.tr !== '?') {
-          const tip = document.createElement('span');
-          tip.className = 'word-tooltip';
-          tip.innerText = dictMatch.tr;
-          span.appendChild(tip);
-        }
-        span.appendChild(document.createTextNode(rawWord + ' '));
-        if (clean && db.unknown.find(u => u.w === clean)) span.classList.add('is-unknown');
-        span.onclick = () => {
-          if (!clean) return;
-          const existing = db.unknown.findIndex(u => u.w === clean);
-          if (existing === -1) {
-            const newWord = dictMatch ? {...dictMatch} : { w:clean, tr:'?', te:'?', tt:'?', de:'?', dt:'?', e1:'?', e1t:'?', e2:'?', e2t:'?' };
-            newWord.interval = 0;
-            newWord.repetitions = 0;
-            newWord.easeFactor = 2.5;
-            newWord.nextReview = 0;
-            db.unknown.push(newWord);
-            span.classList.add('is-unknown');
-            save();
-            const meaning = dictMatch ? ` (${dictMatch.tr})` : '';
-            notify(`"${clean}"${meaning} → Kasaya eklendi 📚`);
-          } else {
-            db.unknown.splice(existing, 1);
-            span.classList.remove('is-unknown');
-            save();
-            notify(`"${clean}" → Kasadan çıkarıldı 🗑️`);
-          }
-        };
-        para.appendChild(span);
-      });
-      area.appendChild(para);
-    }
+      };
+      para.appendChild(span);
+    });
+    area.appendChild(para);
   }
 }
 
@@ -3823,7 +3681,6 @@ function renderCard() {
           <div class="card-word">${w.w}</div>
           ${teHint ? `<div style="font-size:.72rem;color:var(--muted);margin-top:4px;font-style:italic;">${teHint}</div>` : ''}
 
-          <!-- Türkçe anlam: küçük buton, kart içinde -->
           <div style="margin-top:10px;">
             <div class="tr-reveal-wrap" id="trRevealWrap">
               <button class="tr-reveal-btn" id="trRevealBtn" onclick="event.stopPropagation(); revealTranslation()">
@@ -3857,7 +3714,7 @@ function revealTranslation() {
 
 function updateCardContent() {
   let w = cardList[cardIdx];
-  
+
   // Anlık zenginleştirme: ? varsa sözlükten güncelle
   if (w && (w.tr === '?' || !w.tr) && db.dictionary.length > 0) {
     const match = db.dictionary.find(x => x.w === w.w);
@@ -3866,10 +3723,8 @@ function updateCardContent() {
       if (cardSource === 'unknown') save();
     }
   }
-  
-  // ? değerleri kullanıcıya gösterme — yerine "—" koy
-  const val = (v) => (!v || v === '?') ? '—' : v;
 
+  const val = (v) => (!v || v === '?') ? '—' : v;
   const back = document.getElementById('cardBack');
 
   const langToggleBtn = `
@@ -3936,7 +3791,6 @@ function updateCardContent() {
 
 function toggleCardLang() {
   isEngMode = !isEngMode;
-  // Update front face mode label too
   const front = document.querySelector('.card-front div:first-child');
   if (front) front.innerText = isEngMode ? 'English → Turkish' : 'Türkçe Mod';
   updateCardContent();
@@ -4376,7 +4230,7 @@ function _ttsSpeakNext(gen) {
   }
   const seg = ttsSegs[ttsSegIdx];
   const u   = new SpeechSynthesisUtterance(seg.text);
-  u.rate = ttsSpd; u.lang = 'en-US';
+  u.rate = ttsSpd; u.lang = window._ttsLangCode || 'en-US';
   const startWi = ttsWi;
   let lWi = 0;
   let _boundaryFired = false; // onboundary çalışıyorsa timer'ı iptal et
@@ -4430,6 +4284,7 @@ function playS() {
   if (readLangMode === 'TR') { notify('Ses sadece İngilizce modda çalışır'); return; }
   ttsGen++; synth.cancel(); isPlaying = true;
   ttsSpd = parseFloat(document.getElementById('speed').value);
+  window._ttsLangCode = 'en-US';
   const lines    = (activeR?.en || '').trim().split('\n');
   const fullText = lines.length > 1 ? lines.slice(1).join(' ') : (lines[0] || '');
 
@@ -6519,51 +6374,7 @@ window.addEventListener('popstate', function(e) {
   // 5. Home'dayız → geri gitmesine izin ver (uygulama minimize olur)
 });
 
-// ✨ Çift Yönlü Dil Desteği Fonksiyonları
-// ── TEK BUTON: Hem UI dili hem öğrenme yönünü birlikte değiştir ──
-function toggleAllLang() {
-  // Öğrenme yönünü değiştir
-  [db.sourceLanguage, db.targetLanguage] = [db.targetLanguage, db.sourceLanguage];
-  // UI dilini de değiştir
-  db.lang = db.sourceLanguage === 'EN' ? 'EN' : 'TR';
-  save();
-  applyLang(); // UI dilini güncelle (i18n, hero text vb.)
-  updateLanguageDisplay(); // başlık, alt yazı, toggle görünümü
-  buildWeekRow(); // hafta günlerini güncelle
-  // Eğer okuma modundaysa içeriği yeniden render et
-  if (activeR && document.getElementById('readMod')?.classList.contains('active')) {
-    readLangMode = 'EN';
-    renderReadingContent();
-  }
-}
-
-// Eski fonksiyonlar uyumluluk için (readMod butonları kullanır)
-function toggleLanguageDirection() { toggleAllLang(); }
-
-function updateLanguageDisplay() {
-  const title = document.getElementById('readingListeningTitle');
-  const subtitle = document.getElementById('readingListeningSubtitle');
-
-  if (title) {
-    title.textContent = db.sourceLanguage === 'EN' ? 'Reading & Listening' : 'Okuma & Dinleme';
-  }
-
-  if (subtitle) {
-    if (db.sourceLanguage === 'EN' && db.targetLanguage === 'TR') {
-      subtitle.textContent = 'Learn English from Turkish';
-    } else if (db.sourceLanguage === 'TR' && db.targetLanguage === 'EN') {
-      subtitle.textContent = 'Learn Turkish from English';
-    } else {
-      subtitle.textContent = `${db.sourceLanguage} → ${db.targetLanguage}`;
-    }
-  }
-
-  // Toggle buton görünümü
-  const enSpan = document.getElementById('lt-en');
-  const trSpan = document.getElementById('lt-tr');
-  if (enSpan) enSpan.className = db.sourceLanguage === 'EN' ? 'active' : '';
-  if (trSpan) trSpan.className = db.sourceLanguage === 'TR' ? 'active' : '';
-}
+// Dil sabit EN→TR — toggle fonksiyonları kaldırıldı
 
 // Admin data editing functions
 function switchEditTab(tabName) {
